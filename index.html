@@ -39,21 +39,34 @@
 <html manifest="manifest.appcache">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Lantea</title>
+  <title>Lantea Map</title>
   <script src="js/map.js"></script>
   <script src="js/ui.js"></script>
   <link rel="stylesheet" href="style/lantea.css">
 </head>
 <body>
-<h1>Lantea</h1>
+<h1>Lantea Map</h1>
+
+<div id="overlayArea">
+<input type="button" id="zoomInButton" value="+"
+       onclick="zoomIn();">
+<input type="button" id="zoomOutButton" value="-"
+       onclick="zoomOut();"><br/>
+<input type="button" id="settingsButton" value="Settings"
+       onclick="toggleSettings();">
+<fieldset id="settings"><legend>Settings</legend>
+Map style:
+<select id="mapSelector" onclick="setMapStyle();">
+<!-- option value="osm_mapnik">OpenStreetMap (Mapnik)</option -->
+</select>
+</fieldset>
+</div>
 
 <canvas id="map" width="500" height="500">
   Please use a browser that supports &lt;canvas&gt; elements.
 </canvas>
 
-<p id="copyright">Maps &copy;
-<a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors,
-<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a></p>
+<p id="copyright"></p>
 
 </body>
 </html>

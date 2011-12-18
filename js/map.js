@@ -40,7 +40,22 @@ var gCanvas, gContext;
 var gTileSize = 256;
 var gMaxZoom = 18; // The minimum is 0.
 
-//drawMap();
+var gMapStyles = {
+  // OSM tile usage policy: http://wiki.openstreetmap.org/wiki/Tile_usage_policy
+  osm_mapnik:
+    {name: "OpenStreetMap (Mapnik)",
+     url: "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
+  osm_tilesathome:
+    {name: "OpenStreetMap (OSMarender)",
+     url: "http://tah.openstreetmap.org/Tiles/tile/{z}/{x}/{y}.png",
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
+  mapquest_open:
+    {name: "MapQuest Open",
+     url: "http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png",
+     copyright: 'Data, imagery and map information provided by MapQuest, <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'}
+};
+var gActiveMap = "osm_mapnik";
 
 var gPos = {x: 35630000.0, // Current position in the map in pixels at the maximum zoom level (18)
             y: 23670000.0, // The range is 0-67108864 (2^gMaxZoom * gTileSize)
@@ -55,9 +70,11 @@ var gTiles = {};
 var gDragging = false;
 var gZoomTouchID;
 
-window.onload = function() {
+function initMap() {
   gCanvas = document.getElementById("map");
   gContext = gCanvas.getContext("2d");
+  if (!gActiveMap)
+    gActiveMap = "osm_mapnik";
 
   gCanvas.addEventListener("mouseup", mapEvHandler, false);
   gCanvas.addEventListener("mousemove", mapEvHandler, false);
@@ -73,11 +90,8 @@ window.onload = function() {
   gCanvas.addEventListener("DOMMouseScroll", mapEvHandler, false);
   gCanvas.addEventListener("mousewheel", mapEvHandler, false);
 
-  resizeAndDraw();
-}
-
-window.onresize = function() {
-  resizeAndDraw();
+  document.getElementById("copyright").innerHTML =
+      gMapStyles[gActiveMap].copyright;
 }
 
 function resizeAndDraw() {
@@ -85,7 +99,7 @@ function resizeAndDraw() {
   var viewportHeight = window.innerHeight;
 
   var canvasWidth = viewportWidth * 0.98;
-  var canvasHeight = (viewportHeight-110) * 0.98;
+  var canvasHeight = (viewportHeight - 100) * 0.98;
   gCanvas.style.position = "fixed";
   gCanvas.width = canvasWidth;
   gCanvas.height = canvasHeight;
@@ -106,6 +120,15 @@ function zoomOut() {
   }
 }
 
+function setMapStyle() {
+  var mapSel = document.getElementById("mapSelector");
+  if (mapSel.selectedIndex >= 0 && gActiveMap != mapSel.value) {
+    gActiveMap = mapSel.value;
+    gTiles = {};
+    drawMap();
+  }
+}
+
 // A sane mod function that works for negative numbers.
 // Returns a % b.
 function mod(a, b) {
@@ -120,8 +143,9 @@ function normaliseIndices(x, y, z) {
 
 function tileURL(x, y, z) {
   var norm = normaliseIndices(x, y, z);
-  var url = "http://tile.openstreetmap.org/" + norm.z + "/" + norm.x + "/" + norm.y + ".png";
-  return url;
+  return gMapStyles[gActiveMap].url.replace("{x}", norm.x)
+                                   .replace("{y}", norm.y)
+                                   .replace("{z}", norm.z);
 }
 
 // Returns true if the tile is outside the current view.
@@ -162,7 +186,7 @@ function drawMap() {
   var z = Math.round(gPos.z);
   var wid = gCanvas.width * Math.pow(2, gMaxZoom - z); // Width in level 18 pixels.
   var ht = gCanvas.height * Math.pow(2, gMaxZoom - z); // Height in level 18 pixels.
-  var sz = gTileSize * Math.pow(2, gMaxZoom - z); // Tile size in level 18 pixels.
+  var size = gTileSize * Math.pow(2, gMaxZoom - z); // Tile size in level 18 pixels.
 
   var xMin = gPos.x - wid / 2; // Corners of the window in level 18 pixels.
   var yMin = gPos.y - ht / 2;
@@ -170,10 +194,10 @@ function drawMap() {
   var yMax = gPos.y + ht / 2;
 
   // Go through all the tiles we want. If any of them aren't loaded or being loaded, do so.
-  for (var x = Math.floor(xMin / sz); x < Math.ceil(xMax / sz); ++x) {
-    for (var y = Math.floor(yMin / sz); y < Math.ceil(yMax / sz); ++y) {
-      var xoff = (x * sz - xMin) / Math.pow(2, gMaxZoom - z);
-      var yoff = (y * sz - yMin) / Math.pow(2, gMaxZoom - z);
+  for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
+    for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) {
+      var xoff = (x * size - xMin) / Math.pow(2, gMaxZoom - z);
+      var yoff = (y * size - yMin) / Math.pow(2, gMaxZoom - z);
       var tileKey = encodeIndex(x, y, z);
       if (gTiles[tileKey] && gTiles[tileKey].complete) {
         // Round here is **CRUICIAL** otherwise the images are filtered and the performance sucks (more than expected).

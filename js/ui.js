@@ -35,4 +35,29 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+window.onload = function() {
+  var mSel = document.getElementById("mapSelector");
+  for (var mapStyle in gMapStyles) {
+    var opt = document.createElement("option");
+    opt.value = mapStyle;
+    opt.text = gMapStyles[mapStyle].name;
+    mSel.add(opt, null);
+  }
 
+  initMap();
+  resizeAndDraw();
+}
+
+window.onresize = function() {
+  resizeAndDraw();
+}
+
+function toggleSettings() {
+  var fs = document.getElementById("settings");
+  if (fs.style.display != "block") {
+    fs.style.display = "block";
+  }
+  else {
+    fs.style.display = "none";
+  }
+}

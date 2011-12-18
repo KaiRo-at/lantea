@@ -37,6 +37,40 @@
 
 body {
   font-family: sans-serif;
+  margin: 0;
+}
+
+h1 {
+  display: none;
+}
+
+#overlayArea {
+  position: absolute;
+  /* width: 30em; */
+  left: 1%;
+  top: 1em;
+  z-index: 5;
+}
+
+#settings {
+  display: none;
+  background-color: rgba(255, 255, 255, .8);
+  border: 0;
+  border-radius: 5px;
+}
+
+#settings > legend {
+  display: none;
+  background-color: rgba(255, 255, 255, .8);
+  border-radius: 3px;
+}
+
+#map {
+  border: 0;
+  top: 1em;
+  left: 1%;
+  right: 1%;
+  z-index: 1;
 }
 
 #copyright {
