@@ -46,6 +46,7 @@ window.onload = function() {
 
   initMap();
   resizeAndDraw();
+  startTracking();
 }
 
 window.onresize = function() {

@@ -42,6 +42,7 @@ var gMaxZoom = 18; // The minimum is 0.
 
 var gMapStyles = {
   // OSM tile usage policy: http://wiki.openstreetmap.org/wiki/Tile_usage_policy
+  // Find some more OSM ones at http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Tile_servers
   osm_mapnik:
     {name: "OpenStreetMap (Mapnik)",
      url: "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -51,9 +52,17 @@ var gMapStyles = {
      url: "http://tah.openstreetmap.org/Tiles/tile/{z}/{x}/{y}.png",
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
   mapquest_open:
-    {name: "MapQuest Open",
+    {name: "MapQuest OSM",
      url: "http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png",
-     copyright: 'Data, imagery and map information provided by MapQuest, <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'}
+     copyright: 'Data, imagery and map information provided by MapQuest, <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
+  mapquest_aerial:
+    {name: "MapQuest Open Aerial",
+     url: "http://oatile1.mqcdn.com/naip/{z}/{x}/{y}.png",
+     copyright: 'Data, imagery and map information provided by MapQuest, <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
+  google_map:
+    {name: "Google Maps",
+     url: " http://mt1.google.com/vt/x={x}&y={y}&z={z}",
+     copyright: 'Map data and imagery &copy; <a href="http://maps.google.com/">Google</a>'},
 };
 var gActiveMap = "osm_mapnik";
 
@@ -71,6 +80,10 @@ var gLoadingTile;
 
 var gDragging = false;
 var gZoomTouchID;
+
+var gGeoWatchID;
+var gTrack = [];
+var gLastTrackPoint;
 
 function initMap() {
   gCanvas = document.getElementById("map");
@@ -123,6 +136,24 @@ function zoomOut() {
     gPos.z--;
     drawMap();
   }
+}
+
+function gps2xy(aLatitude, aLongitude) {
+  var maxZoomFactor = Math.pow(2, gMaxZoom) * gTileSize;
+  var convLat = aLatitude * Math.PI / 180;
+  var rawY = (1 - Math.log(Math.tan(convLat) +
+                           1 / Math.cos(convLat)) / Math.PI) / 2 * maxZoomFactor;
+  var rawX = (aLongitude + 180) / 360 * maxZoomFactor;
+  return {x: Math.round(rawX),
+          y: Math.round(rawY)};
+}
+
+function xy2gps(aX, aY) {
+  var maxZoomFactor = Math.pow(2, gMaxZoom) * gTileSize;
+  var n = Math.PI - 2 * Math.PI * aY / maxZoomFactor;
+  return {latitude: 180 / Math.PI *
+                    Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))),
+          longitude: aX / maxZoomFactor * 360 - 180};
 }
 
 function setMapStyle() {
@@ -225,6 +256,34 @@ function drawMap() {
       }
     }
   }
+  if (gTrack.length)
+    for (var i = 0; i < gTrack.length; i++) {
+      drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude);
+    }
+}
+
+function drawTrackPoint(aLatitude, aLongitude) {
+  var trackpoint = gps2xy(aLatitude, aLongitude);
+  gContext.strokeStyle = "#FF0000";
+  gContext.fillStyle = gContext.strokeStyle;
+  gContext.lineWidth = 2;
+  gContext.lineCap = "round";
+  gContext.lineJoin = "round";
+  gContext.beginPath();
+  if (!gLastTrackPoint || gLastTrackPoint == trackpoint) {
+    gContext.arc((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2,
+                 (trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2,
+                 gContext.lineWidth, 0, Math.PI * 2, false);
+    gContext.fill();
+  }
+  else {
+    gContext.moveTo((gLastTrackPoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2,
+                    (gLastTrackPoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2);
+    gContext.lineTo((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2,
+                    (trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2);
+    gContext.stroke();
+  }
+  gLastTrackPoint = trackpoint;
 }
 
 var mapEvHandler = {
@@ -303,11 +362,21 @@ var mapEvHandler = {
         // must equal the pixel distance of the new center and that point.
         var x = coordObj.clientX - gCanvas.offsetLeft;
         var y = coordObj.clientY - gCanvas.offsetTop;
+        // Debug output: "coordinates" of the point the mouse was over.
+        /*
+        var ptCoord = {x: gPos.x + (x - gCanvas.width / 2) * gZoomFactor,
+                       y: gPos.y + (x - gCanvas.height / 2) * gZoomFactor};
+        var gpsCoord = xy2gps(ptCoord.x, ptCoord.y);
+        var pt2Coord = gps2xy(gpsCoord.latitude, gpsCoord.longitude);
+        document.getElementById("debug").textContent =
+            ptCoord.x + "/" + ptCoord.y + " - " +
+            gpsCoord.latitude + "/" + gpsCoord.longitude + " - " +
+            pt2Coord.x + "/" + pt2Coord.y;
+        */
         // Zoom factor after this action.
         var newZoomFactor = Math.pow(2, gMaxZoom - gPos.z + (delta > 0 ? -1 : 1));
         gPos.x -= (x - gCanvas.width / 2) * (newZoomFactor - gZoomFactor);
         gPos.y -= (y - gCanvas.height / 2) * (newZoomFactor - gZoomFactor);
-        document.getElementById("debug").textContent = newZoomFactor + " - " + gZoomFactor;
 
         if (delta > 0)
           zoomIn();
@@ -317,3 +386,48 @@ var mapEvHandler = {
     }
   }
 };
+
+geofake = {
+  tracking: false,
+  watchPosition: function(aSuccessCallback, aErrorCallback, aPrefObject) {
+    this.tracking = true;
+    var watchCall = function() {
+      aSuccessCallback({timestamp: Date.now(),
+                        coords: {latitude: 48.208174, // + Math.random() - .5,
+                                 longitude: 16.373819, // + Math.random() - .5,
+                                 accuracy: 20}});
+      if (geofake.tracking)
+        setTimeout(watchCall, 1000);
+    };
+    setTimeout(watchCall, 1000);
+    return "foo";
+  },
+  clearWatch: function(aID) {
+    this.tracking = false;
+  }
+}
+
+function startTracking() {
+  if (navigator.geolocation) {
+    //gGeoWatchID = geofake.watchPosition(
+    gGeoWatchID = navigator.geolocation.watchPosition(
+      function(position) {
+        // Coords spec: https://developer.mozilla.org/en/XPCOM_Interface_Reference/NsIDOMGeoPositionCoords
+        gTrack.push({time: position.timestamp, coords: position.coords});
+        drawTrackPoint(position.coords.latitude, position.coords.longitude);
+      },
+      function(error) {
+        // Ignore erros for the moment, but this is good for debugging.
+        // See https://developer.mozilla.org/en/Using_geolocation#Handling_errors
+        document.getElementById("debug").textContent = error.message;
+      },
+      {enableHighAccuracy: true}
+    );
+  }
+}
+
+function endTracking() {
+  if (gGeoWatchID) {
+    navigator.geolocation.clearWatch(gGeoWatchID);
+  }
+}
