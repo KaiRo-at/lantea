@@ -1,0 +1,9 @@
+{
+  "name": "Lantea",
+  "description": "geologger",
+  "launch_path": "/index.html",
+  "developer": {
+    "name": "Robert Kaiser",
+    "url": "http://www.kairo.at/"
+  }
+}
