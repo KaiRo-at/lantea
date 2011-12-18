@@ -1,10 +1,16 @@
 {
-  "name": "Lantea",
-  "description": "geologger",
+  "name": "Lantea Map",
+  "description": "Mapping and tracking application",
   "launch_path": "/index.html",
   "developer": {
     "name": "Robert Kaiser",
     "url": "http://www.kairo.at/"
+  },
+  "icons": {
+    "16": "/style/lanteaIcon16.png",
+    "32": "/style/lanteaIcon32.png",
+    "64": "/style/lanteaIcon64.png",
+    "128": "/style/lanteaIcon128.png"
   },
   "installs_allowed_from": [
     "https://apps-preview.mozilla.org",

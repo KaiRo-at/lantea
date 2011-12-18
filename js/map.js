@@ -59,13 +59,15 @@ var gActiveMap = "osm_mapnik";
 
 var gPos = {x: 35630000.0, // Current position in the map in pixels at the maximum zoom level (18)
             y: 23670000.0, // The range is 0-67108864 (2^gMaxZoom * gTileSize)
-            z: 5.0}; // This can be fractional if we are between zoom levels.
+            z: 5}; // This could be fractional if supported being between zoom levels.
 
 var gLastMouseX = 0;
 var gLastMouseY = 0;
+var gZoomFactor;
 
-// Used as an assiciative array. They keys have to be strings, ours will be "xindex,yindex,zindex" e.g. "13,245,12".
+// Used as an associative array. They keys have to be strings, ours will be "xindex,yindex,zindex" e.g. "13,245,12".
 var gTiles = {};
+var gLoadingTile;
 
 var gDragging = false;
 var gZoomTouchID;
@@ -92,6 +94,9 @@ function initMap() {
 
   document.getElementById("copyright").innerHTML =
       gMapStyles[gActiveMap].copyright;
+
+  gLoadingTile = new Image();
+  gLoadingTile.src = "style/loading.png";
 }
 
 function resizeAndDraw() {
@@ -136,8 +141,9 @@ function mod(a, b) {
 }
 
 function normaliseIndices(x, y, z) {
-  return {x: mod(x, Math.pow(2, z)),
-          y: mod(y, Math.pow(2, z)),
+  var zoomFactor = Math.pow(2, z);
+  return {x: mod(x, zoomFactor),
+          y: mod(y, zoomFactor),
           z: z};
 }
 
@@ -155,13 +161,14 @@ function isOutsideWindow(t) {
   var y = pos[1];
   var z = pos[2];
 
-  var wid = gCanvas.width * Math.pow(2, gMaxZoom - z);
-  var ht = gCanvas.height * Math.pow(2, gMaxZoom - z);
+  var zoomFactor = Math.pow(2, gMaxZoom - z);
+  var wid = gCanvas.width * zoomFactor;
+  var ht = gCanvas.height * zoomFactor;
 
-  x *= Math.pow(2, gMaxZoom - z);
-  y *= Math.pow(2, gMaxZoom - z);
+  x *= zoomFactor;
+  y *= zoomFactor;
 
-  var sz = gTileSize * Math.pow(2, gMaxZoom - z);
+  var sz = gTileSize * zoomFactor;
   if (x > gPos.x + wid / 2 || y > gPos.y + ht / 2 ||
       x + sz < gPos.x - wid / 2 || y - sz < gPos.y - ht / 2)
     return true;
@@ -183,10 +190,11 @@ function drawMap() {
   //   if (isOutsideWindow(t))
   //     delete gTiles[t];
   // }
-  var z = Math.round(gPos.z);
-  var wid = gCanvas.width * Math.pow(2, gMaxZoom - z); // Width in level 18 pixels.
-  var ht = gCanvas.height * Math.pow(2, gMaxZoom - z); // Height in level 18 pixels.
-  var size = gTileSize * Math.pow(2, gMaxZoom - z); // Tile size in level 18 pixels.
+  document.getElementById("zoomLevel").textContent = gPos.z;
+  gZoomFactor = Math.pow(2, gMaxZoom - gPos.z);
+  var wid = gCanvas.width * gZoomFactor; // Width in level 18 pixels.
+  var ht = gCanvas.height * gZoomFactor; // Height in level 18 pixels.
+  var size = gTileSize * gZoomFactor; // Tile size in level 18 pixels.
 
   var xMin = gPos.x - wid / 2; // Corners of the window in level 18 pixels.
   var yMin = gPos.y - ht / 2;
@@ -196,9 +204,9 @@ function drawMap() {
   // Go through all the tiles we want. If any of them aren't loaded or being loaded, do so.
   for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
     for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) {
-      var xoff = (x * size - xMin) / Math.pow(2, gMaxZoom - z);
-      var yoff = (y * size - yMin) / Math.pow(2, gMaxZoom - z);
-      var tileKey = encodeIndex(x, y, z);
+      var xoff = (x * size - xMin) / gZoomFactor;
+      var yoff = (y * size - yMin) / gZoomFactor;
+      var tileKey = encodeIndex(x, y, gPos.z);
       if (gTiles[tileKey] && gTiles[tileKey].complete) {
         // Round here is **CRUICIAL** otherwise the images are filtered and the performance sucks (more than expected).
         gContext.drawImage(gTiles[tileKey], Math.round(xoff), Math.round(yoff));
@@ -213,8 +221,7 @@ function drawMap() {
             drawMap();
           }
         }
-        gContext.fillStyle = "#ffffff";
-        gContext.fillRect(Math.round(xoff), Math.round(yoff), gTileSize, gTileSize);
+        gContext.drawImage(gLoadingTile, Math.round(xoff), Math.round(yoff));
       }
     }
   }
@@ -224,7 +231,7 @@ var mapEvHandler = {
   handleEvent: function(aEvent) {
     var touchEvent = aEvent.type.indexOf('touch') != -1;
 
-    // Bail out on unwanted map moves, but not mousewheel events.
+    // Bail out on unwanted map moves, but not zoom-changing events.
     if (aEvent.type != "DOMMouseScroll" && aEvent.type != "mousewheel") {
       // Bail out if this is neither a touch nor left-click.
       if (!touchEvent && aEvent.button != 0)
@@ -249,6 +256,7 @@ var mapEvHandler = {
         }
         var x = coordObj.clientX - gCanvas.offsetLeft;
         var y = coordObj.clientY - gCanvas.offsetTop;
+
         if (touchEvent || aEvent.button === 0) {
           gDragging = true;
         }
@@ -262,8 +270,8 @@ var mapEvHandler = {
         if (gDragging === true) {
           var dX = x - gLastMouseX;
           var dY = y - gLastMouseY;
-          gPos.x -= dX * Math.pow(2, gMaxZoom - gPos.z);
-          gPos.y -= dY * Math.pow(2, gMaxZoom - gPos.z);
+          gPos.x -= dX * gZoomFactor;
+          gPos.y -= dY * gZoomFactor;
           drawMap();
         }
         gLastMouseX = x;
@@ -289,6 +297,17 @@ var mapEvHandler = {
         else if (aEvent.detail) {
           delta = -aEvent.detail / 3;
         }
+
+        // Calculate new center of the map - same point stays under the mouse.
+        // This means that the pixel distance between the old center and point
+        // must equal the pixel distance of the new center and that point.
+        var x = coordObj.clientX - gCanvas.offsetLeft;
+        var y = coordObj.clientY - gCanvas.offsetTop;
+        // Zoom factor after this action.
+        var newZoomFactor = Math.pow(2, gMaxZoom - gPos.z + (delta > 0 ? -1 : 1));
+        gPos.x -= (x - gCanvas.width / 2) * (newZoomFactor - gZoomFactor);
+        gPos.y -= (y - gCanvas.height / 2) * (newZoomFactor - gZoomFactor);
+        document.getElementById("debug").textContent = newZoomFactor + " - " + gZoomFactor;
 
         if (delta > 0)
           zoomIn();

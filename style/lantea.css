@@ -52,6 +52,13 @@ h1 {
   z-index: 5;
 }
 
+#zoomLevel {
+  background-color: rgba(255, 255, 255, .8);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+
 #settings {
   display: none;
   background-color: rgba(255, 255, 255, .8);
@@ -71,6 +78,13 @@ h1 {
   left: 1%;
   right: 1%;
   z-index: 1;
+}
+
+#debug {
+  position: absolute;
+  bottom: .5em;
+  left: .5em;
+  margin: 0;
 }
 
 #copyright {
