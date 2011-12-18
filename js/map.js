@@ -84,6 +84,7 @@ var gZoomTouchID;
 var gGeoWatchID;
 var gTrack = [];
 var gLastTrackPoint;
+var gCenterPosition = true;
 
 function initMap() {
   gCanvas = document.getElementById("map");
@@ -415,6 +416,12 @@ function startTracking() {
         // Coords spec: https://developer.mozilla.org/en/XPCOM_Interface_Reference/NsIDOMGeoPositionCoords
         gTrack.push({time: position.timestamp, coords: position.coords});
         drawTrackPoint(position.coords.latitude, position.coords.longitude);
+        if (gCenterPosition) {
+          var posCoord = gps2xy(position.coords.latitude, position.coords.longitude);
+          gPos.x = posCoord.x;
+          gPos.y = posCoord.y;
+          drawMap();
+        }
       },
       function(error) {
         // Ignore erros for the moment, but this is good for debugging.
