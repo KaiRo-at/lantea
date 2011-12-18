@@ -2,6 +2,10 @@ CACHE MANIFEST
 
 # /
 index.html
+manifest.webapp
+js/map.js
+js/ui.js
+style/lantea.css
 
 NETWORK:
 
