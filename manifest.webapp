@@ -5,5 +5,8 @@
   "developer": {
     "name": "Robert Kaiser",
     "url": "http://www.kairo.at/"
-  }
+  },
+  "installs_allowed_from": [
+    "https://appstore.mozillalabs.com"
+  ]
 }
