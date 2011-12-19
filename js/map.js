@@ -418,9 +418,12 @@ function startTracking() {
         drawTrackPoint(position.coords.latitude, position.coords.longitude);
         if (gCenterPosition) {
           var posCoord = gps2xy(position.coords.latitude, position.coords.longitude);
-          gPos.x = posCoord.x;
-          gPos.y = posCoord.y;
-          drawMap();
+          if (Math.abs(gPos.x - posCoord.x) > gCanvas.width * gZoomFactor / 4 ||
+              Math.abs(gPos.y - posCoord.y) > gCanvas.height * gZoomFactor / 4) {
+            gPos.x = posCoord.x;
+            gPos.y = posCoord.y;
+            drawMap();
+          }
         }
       },
       function(error) {

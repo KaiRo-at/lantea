@@ -62,3 +62,38 @@ function toggleSettings() {
     fs.style.display = "none";
   }
 }
+
+function makeISOString(aTimestamp) {
+  // ISO time format is YYYY-MM-DDTHH:mm:ssZ
+  var tsDate = new Date(aTimestamp);
+  return tsDate.getUTCFullYear() + "-" +
+         (tsDate.getUTCMonth() < 10 ? "0" : "") + tsDate.getUTCMonth() + "-" +
+         (tsDate.getUTCDate() < 10 ? "0" : "") + tsDate.getUTCDate() + "T" +
+         (tsDate.getUTCHours() < 10 ? "0" : "") + tsDate.getUTCHours() + ":" +
+         (tsDate.getUTCMinutes() < 10 ? "0" : "") + tsDate.getUTCMinutes() + ":" +
+         (tsDate.getUTCSeconds() < 10 ? "0" : "") + tsDate.getUTCSeconds() + "Z";
+}
+
+function saveTrack() {
+  if (gTrack.length) {
+    var out = '<?xml version="1.0" encoding="UTF-8" ?>' + "\n\n";
+    out += '<gpx version="1.0" creator="Lantea" xmlns="http://www.topografix.com/GPX/1/0">' + "\n";
+    out += '  <trk>' + "\n";
+    out += '    <trkseg>' + "\n";
+    for (var i = 0; i < gTrack.length; i++) {
+      out += '      <trkpt lat="' + gTrack[i].coords.latitude + '" lon="' +
+                                    gTrack[i].coords.longitude + '">' + "\n";
+      if (gTrack[i].coords.altitude) {
+        out += '        <ele>' + gTrack[i].coords.altitude + '</ele>' + "\n";
+      }
+      out += '        <time>' + makeISOString(gTrack[i].time) + '</time>' + "\n";
+      out += '      </trkpt>' + "\n";
+      gTrack[i].coords.latitude, gTrack[i].coords.longitude;
+    }
+    out += '    </trkseg>' + "\n";
+    out += '  </trk>' + "\n";
+    out += '</gpx>' + "\n";
+    var outDataURI = "data:application/octet-stream," + encodeURIComponent(out);
+    window.open(outDataURI, 'GPX Track');
+  }
+}
