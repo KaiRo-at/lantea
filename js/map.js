@@ -388,7 +388,7 @@ var mapEvHandler = {
   }
 };
 
-geofake = {
+var geofake = {
   tracking: false,
   watchPosition: function(aSuccessCallback, aErrorCallback, aPrefObject) {
     this.tracking = true;
@@ -409,12 +409,32 @@ geofake = {
 }
 
 function startTracking() {
+  var loopCnt = 0;
+  var getStoredTrack = function() {
+    if (mainDB)
+      gTrackStore.getList(function(aTPoints) {
+        document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
+        if (aTPoints.length) {
+          gTrack = aTPoints;
+        }
+      });
+    else
+      setTimeout(getStoredTrack, 100);
+    loopCnt++;
+    if (loopCnt > 20)
+      return;
+  };
+  getStoredTrack();
   if (navigator.geolocation) {
     //gGeoWatchID = geofake.watchPosition(
     gGeoWatchID = navigator.geolocation.watchPosition(
       function(position) {
         // Coords spec: https://developer.mozilla.org/en/XPCOM_Interface_Reference/NsIDOMGeoPositionCoords
-        gTrack.push({time: position.timestamp, coords: position.coords});
+        var tPoint = {time: position.timestamp,
+                      coords: position.coords,
+                      beginSegment: !gLastTrackPoint};
+        gTrack.push(tPoint);
+        gTrackStore.push(tPoint);
         drawTrackPoint(position.coords.latitude, position.coords.longitude);
         if (gCenterPosition) {
           var posCoord = gps2xy(position.coords.latitude, position.coords.longitude);
@@ -440,4 +460,10 @@ function endTracking() {
   if (gGeoWatchID) {
     navigator.geolocation.clearWatch(gGeoWatchID);
   }
+}
+
+function clearTrack() {
+  gTrack = [];
+  gTrackStore.clear();
+  drawMap();
 }
