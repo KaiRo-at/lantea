@@ -413,7 +413,7 @@ function startTracking() {
   var getStoredTrack = function() {
     if (mainDB)
       gTrackStore.getList(function(aTPoints) {
-        document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
+        //document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
         if (aTPoints.length) {
           gTrack = aTPoints;
         }
