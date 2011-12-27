@@ -61,12 +61,18 @@
        onclick="saveTrack();">
 <input type="button" id="clearTrackButton" value="Clear"
        onclick="clearTrack();"><br/>
+<input type="checkbox" id="trackCheckbox"
+       onchange="setTracking(this);">
+<label for="trackCheckbox">Enable tracking</label><br/>
+<input type="checkbox" id="centerCheckbox"
+       onchange="setCentering(this);">
+<label for="centerCheckbox">Center Map</label><br/>
 </fieldset>
 <input type="button" id="settingsButton" value="Settings"
        onclick="toggleSettings();"><br/>
 <fieldset id="settingsArea"><legend>Settings</legend>
 Map style:
-<select id="mapSelector" onclick="setMapStyle();">
+<select id="mapSelector" onchange="setMapStyle();">
 <!-- option value="osm_mapnik">OpenStreetMap (Mapnik)</option -->
 </select>
 </fieldset>

@@ -74,9 +74,12 @@ var gLastMouseX = 0;
 var gLastMouseY = 0;
 var gZoomFactor;
 
-// Used as an associative array. They keys have to be strings, ours will be "xindex,yindex,zindex" e.g. "13,245,12".
+// Used as an associative array.
+// The keys have to be strings, ours will be "xindex,yindex,zindex" e.g. "13,245,12".
 var gTiles = {};
 var gLoadingTile;
+
+var gMapPrefsLoaded = false;
 
 var gDragging = false;
 var gZoomTouchID;
@@ -91,6 +94,41 @@ function initMap() {
   gContext = gCanvas.getContext("2d");
   if (!gActiveMap)
     gActiveMap = "osm_mapnik";
+
+  var loopCnt = 0;
+  var getPersistentPrefs = function() {
+    if (mainDB) {
+      gPrefs.get("position", function(aValue) {
+        if (aValue) {
+          gPos = aValue;
+          drawMap();
+        }
+      });
+      gPrefs.get("center_map", function(aValue) {
+        if (aValue === undefined)
+          document.getElementById("centerCheckbox").checked = true;
+        else
+          document.getElementById("centerCheckbox").checked = aValue;
+        setCentering(document.getElementById("centerCheckbox"));
+      });
+      gPrefs.get("tracking_enabled", function(aValue) {
+        if (aValue === undefined)
+          document.getElementById("trackCheckbox").checked = true;
+        else
+          document.getElementById("trackCheckbox").checked = aValue;
+        setTracking(document.getElementById("trackCheckbox"));
+      });
+      gMapPrefsLoaded = true;
+    }
+    else
+      setTimeout(getPersistentPrefs, 100);
+    loopCnt++;
+    if (loopCnt > 20) {
+      gMapPrefsLoaded = true;
+      return;
+    }
+  };
+  getPersistentPrefs();
 
   gCanvas.addEventListener("mouseup", mapEvHandler, false);
   gCanvas.addEventListener("mousemove", mapEvHandler, false);
@@ -233,14 +271,19 @@ function drawMap() {
   var xMax = gPos.x + wid / 2;
   var yMax = gPos.y + ht / 2;
 
-  // Go through all the tiles we want. If any of them aren't loaded or being loaded, do so.
+  if (gMapPrefsLoaded && mainDB)
+    gPrefs.set("position", gPos);
+
+  // Go through all the tiles we want.
+  // If any of them aren't loaded or being loaded, do so.
   for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
     for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) {
       var xoff = (x * size - xMin) / gZoomFactor;
       var yoff = (y * size - yMin) / gZoomFactor;
       var tileKey = encodeIndex(x, y, gPos.z);
       if (gTiles[tileKey] && gTiles[tileKey].complete) {
-        // Round here is **CRUICIAL** otherwise the images are filtered and the performance sucks (more than expected).
+        // Round here is **CRUCIAL** otherwise the images are filtered
+        // and the performance sucks (more than expected).
         gContext.drawImage(gTiles[tileKey], Math.round(xoff), Math.round(yoff));
       }
       else {
@@ -394,8 +437,10 @@ var geofake = {
     this.tracking = true;
     var watchCall = function() {
       aSuccessCallback({timestamp: Date.now(),
-                        coords: {latitude: 48.208174, // + Math.random() - .5,
-                                 longitude: 16.373819, // + Math.random() - .5,
+                        coords: {latitude: 48.208174 +
+                                           (Math.random() - .5) / 5,
+                                 longitude: 16.373819 +
+                                            (Math.random() - .5) / 5,
                                  accuracy: 20}});
       if (geofake.tracking)
         setTimeout(watchCall, 1000);
@@ -406,6 +451,21 @@ var geofake = {
   clearWatch: function(aID) {
     this.tracking = false;
   }
+}
+
+function setCentering(aCheckbox) {
+  if (gMapPrefsLoaded && mainDB)
+    gPrefs.set("center_map", aCheckbox.checked);
+  gCenterPosition = aCheckbox.checked;
+}
+
+function setTracking(aCheckbox) {
+  if (gMapPrefsLoaded && mainDB)
+    gPrefs.set("tracking_enabled", aCheckbox.checked);
+  if (aCheckbox.checked)
+    startTracking();
+  else
+    endTracking();
 }
 
 function startTracking() {
@@ -437,7 +497,8 @@ function startTracking() {
         gTrackStore.push(tPoint);
         drawTrackPoint(position.coords.latitude, position.coords.longitude);
         if (gCenterPosition) {
-          var posCoord = gps2xy(position.coords.latitude, position.coords.longitude);
+          var posCoord = gps2xy(position.coords.latitude,
+                                position.coords.longitude);
           if (Math.abs(gPos.x - posCoord.x) > gCanvas.width * gZoomFactor / 4 ||
               Math.abs(gPos.y - posCoord.y) > gCanvas.height * gZoomFactor / 4) {
             gPos.x = posCoord.x;
@@ -458,6 +519,7 @@ function startTracking() {
 
 function endTracking() {
   if (gGeoWatchID) {
+    //geofake.clearWatch(gGeoWatchID);
     navigator.geolocation.clearWatch(gGeoWatchID);
   }
 }

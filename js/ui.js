@@ -51,7 +51,6 @@ window.onload = function() {
   initDB();
   initMap();
   resizeAndDraw();
-  startTracking();
 }
 
 window.onresize = function() {
@@ -168,7 +167,7 @@ var gPrefs = {
     var transaction = mainDB.transaction([this.objStore],
                                          IDBTransaction.READ_WRITE);
     var objStore = transaction.objectStore(this.objStore);
-    var request = objStore.add(aValue, aKey);
+    var request = objStore.put(aValue, aKey);
     request.onsuccess = function(event) {
       success = true;
       if (aCallback)
