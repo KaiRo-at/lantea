@@ -105,8 +105,16 @@ function saveTrack() {
     out += '    </trkseg>' + "\n";
     out += '  </trk>' + "\n";
     out += '</gpx>' + "\n";
-    var outDataURI = "data:application/octet-stream," + encodeURIComponent(out);
+    var outDataURI = "data:application/gpx+xml," + encodeURIComponent(out);
     window.open(outDataURI, 'GPX Track');
+  }
+}
+
+function saveTrackDump() {
+  if (gTrack.length) {
+    var out = JSON.stringify(gTrack);
+    var outDataURI = "data:application/json," + encodeURIComponent(out);
+    window.open(outDataURI, 'JSON dump');
   }
 }
 

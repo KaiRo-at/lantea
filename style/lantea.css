@@ -56,6 +56,10 @@ h1 {
   margin: 0;
 }
 
+.debugHide {
+  display: none;
+}
+
 #copyright {
   position: absolute;
   bottom: .5em;

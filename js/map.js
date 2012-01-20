@@ -2,7 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var gCanvas, gContext;
+var gCanvas, gContext, gGeolocation;
+var gDebug = false;
 
 var gTileSize = 256;
 var gMaxZoom = 18; // The minimum is 0.
@@ -49,7 +50,7 @@ var gLoadingTile;
 var gMapPrefsLoaded = false;
 
 var gDragging = false;
-var gZoomTouchID;
+var gDragTouchID;
 
 var gGeoWatchID;
 var gTrack = [];
@@ -57,10 +58,21 @@ var gLastTrackPoint;
 var gCenterPosition = true;
 
 function initMap() {
+  gGeolocation = navigator.geolocation;
   gCanvas = document.getElementById("map");
   gContext = gCanvas.getContext("2d");
   if (!gActiveMap)
     gActiveMap = "osm_mapnik";
+
+  //gDebug = true;
+  if (gDebug) {
+    gGeolocation = geofake;
+    var hiddenList = document.getElementsByClassName("debugHide");
+    // last to first - list of elements with that class is changing!
+    for (var i = hiddenList.length - 1; i >= 0; i--) {
+      hiddenList[i].classList.remove("debugHide");
+    }
+  }
 
   var loopCnt = 0;
   var getPersistentPrefs = function() {
@@ -308,21 +320,21 @@ var mapEvHandler = {
         return;
 
       // Bail out if the started touch can't be found.
-      if (touchEvent && zoomstart &&
-          !aEvent.changedTouches.identifiedTouch(gZoomTouchID))
+      if (touchEvent && gDragging &&
+          !aEvent.changedTouches.identifiedTouch(gDragTouchID))
         return;
     }
 
     var coordObj = touchEvent ?
-                   aEvent.changedTouches.identifiedTouch(gZoomTouchID) :
+                   aEvent.changedTouches.identifiedTouch(gDragTouchID) :
                    aEvent;
 
     switch (aEvent.type) {
       case "mousedown":
       case "touchstart":
         if (touchEvent) {
-          zoomTouchID = aEvent.changedTouches.item(0).identifier;
-          coordObj = aEvent.changedTouches.identifiedTouch(gZoomTouchID);
+          gDragTouchID = aEvent.changedTouches.item(0).identifier;
+          coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
         }
         var x = coordObj.clientX - gCanvas.offsetLeft;
         var y = coordObj.clientY - gCanvas.offsetTop;
@@ -400,14 +412,24 @@ var mapEvHandler = {
 
 var geofake = {
   tracking: false,
+  lastPos: {x: undefined, y: undefined},
   watchPosition: function(aSuccessCallback, aErrorCallback, aPrefObject) {
     this.tracking = true;
     var watchCall = function() {
+      // calc new position in lat/lon degrees
+      // 90° on Earth surface are ~10,000 km at the equator,
+      // so try moving at most 10m at a time
+      if (geofake.lastPos.x)
+        geofake.lastPos.x += (Math.random() - .5) * 90 / 1000000
+      else
+        geofake.lastPos.x = 48.208174
+      if (geofake.lastPos.y)
+        geofake.lastPos.y += (Math.random() - .5) * 90 / 1000000
+      else
+        geofake.lastPos.y = 16.373819
       aSuccessCallback({timestamp: Date.now(),
-                        coords: {latitude: 48.208174 +
-                                           (Math.random() - .5) / 5,
-                                 longitude: 16.373819 +
-                                            (Math.random() - .5) / 5,
+                        coords: {latitude: geofake.lastPos.x,
+                                 longitude: geofake.lastPos.y,
                                  accuracy: 20}});
       if (geofake.tracking)
         setTimeout(watchCall, 1000);
@@ -440,7 +462,8 @@ function startTracking() {
   var getStoredTrack = function() {
     if (mainDB)
       gTrackStore.getList(function(aTPoints) {
-        //document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
+        if (gDebug)
+          document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
         if (aTPoints.length) {
           gTrack = aTPoints;
         }
@@ -453,8 +476,7 @@ function startTracking() {
   };
   getStoredTrack();
   if (navigator.geolocation) {
-    //gGeoWatchID = geofake.watchPosition(
-    gGeoWatchID = navigator.geolocation.watchPosition(
+    gGeoWatchID = gGeolocation.watchPosition(
       function(position) {
         // Coords spec: https://developer.mozilla.org/en/XPCOM_Interface_Reference/NsIDOMGeoPositionCoords
         var tPoint = {time: position.timestamp,
@@ -486,8 +508,7 @@ function startTracking() {
 
 function endTracking() {
   if (gGeoWatchID) {
-    //geofake.clearWatch(gGeoWatchID);
-    navigator.geolocation.clearWatch(gGeoWatchID);
+    gGeolocation.clearWatch(gGeoWatchID);
   }
 }
 
