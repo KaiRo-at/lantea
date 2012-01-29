@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 var gCanvas, gContext, gGeolocation;
-var gDebug = false;
+var gDebug = true;
 
 var gTileSize = 256;
 var gMaxZoom = 18; // The minimum is 0.
