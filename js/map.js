@@ -131,8 +131,8 @@ function initMap() {
 }
 
 function resizeAndDraw() {
-  var viewportWidth = window.innerWidth;
-  var viewportHeight = window.innerHeight;
+  var viewportWidth = Math.min(window.innerWidth, window.outerWidth);
+  var viewportHeight = Math.min(window.innerHeight, window.outerHeight);
 
   var canvasWidth = viewportWidth * 0.98;
   var canvasHeight = (viewportHeight - 100) * 0.98;
