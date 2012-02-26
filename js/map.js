@@ -475,15 +475,21 @@ function startTracking() {
       return;
   };
   getStoredTrack();
-  if (navigator.geolocation) {
+  if (gGeolocation) {
     gGeoWatchID = gGeolocation.watchPosition(
       function(position) {
         // Coords spec: https://developer.mozilla.org/en/XPCOM_Interface_Reference/NsIDOMGeoPositionCoords
         var tPoint = {time: position.timestamp,
-                      coords: position.coords,
+                      coords: {latitude: position.coords.latitude,
+                               longitude: position.coords.longitude,
+                               altitude: position.coords.altitude,
+                               accuracy: position.coords.accuracy,
+                               altitudeAccuracy: position.coords.altitudeAccuracy,
+                               heading: position.coords.heading,
+                               speed: position.coords.speed},
                       beginSegment: !gLastTrackPoint};
         gTrack.push(tPoint);
-        gTrackStore.push(tPoint);
+        try { gTrackStore.push(tPoint); } catch(e) {}
         drawTrackPoint(position.coords.latitude, position.coords.longitude);
         if (gCenterPosition) {
           var posCoord = gps2xy(position.coords.latitude,
