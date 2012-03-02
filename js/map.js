@@ -134,8 +134,8 @@ function resizeAndDraw() {
   var viewportWidth = Math.min(window.innerWidth, window.outerWidth);
   var viewportHeight = Math.min(window.innerHeight, window.outerHeight);
 
-  var canvasWidth = viewportWidth * 0.98;
-  var canvasHeight = (viewportHeight - 100) * 0.98;
+  var canvasWidth = viewportWidth - 2;
+  var canvasHeight = viewportHeight - 2;
   gCanvas.style.position = "fixed";
   gCanvas.width = canvasWidth;
   gCanvas.height = canvasHeight;

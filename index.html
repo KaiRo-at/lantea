@@ -6,6 +6,9 @@
 <html manifest="manifest.appcache">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <!-- try to counts default scaling on mobile, see 
+       https://developer.mozilla.org/en/Mobile/Viewport_meta_tag -->
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=.6667, maximum-scale=.6667">
   <title>Lantea Maps</title>
   <script src="js/map.js"></script>
   <script src="js/ui.js"></script>
@@ -47,12 +50,12 @@ Map style:
 </fieldset>
 </div>
 
+<p id="debug" class="debugHide"></p>
+<p id="copyright"></p>
+
 <canvas id="map" width="500" height="500">
   Please use a browser that supports &lt;canvas&gt; elements.
 </canvas>
-
-<p id="debug" class="debugHide"></p>
-<p id="copyright"></p>
 
 </body>
 </html>
