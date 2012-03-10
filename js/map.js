@@ -15,9 +15,13 @@ var gMapStyles = {
     {name: "OpenStreetMap (Mapnik)",
      url: "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
-  osm_tilesathome:
-    {name: "OpenStreetMap (OSMarender)",
-     url: "http://tah.openstreetmap.org/Tiles/tile/{z}/{x}/{y}.png",
+  osm_cyclemap:
+    {name: "Cycle Map (OSM)",
+     url: "http://[a-c].tile.opencyclemap.org/cycle/{z}/{x}/{y}.png",
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
+  osm_transmap:
+    {name: "Transport Map (OSM)",
+     url: "http://[a-c].tile2.opencyclemap.org/transport/{z}/{x}/{y}.png",
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
   mapquest_open:
     {name: "MapQuest OSM",
@@ -54,7 +58,7 @@ var gDragTouchID;
 
 var gGeoWatchID;
 var gTrack = [];
-var gLastTrackPoint;
+var gLastTrackPoint, gLastDrawnPoint;
 var gCenterPosition = true;
 
 function initMap() {
@@ -198,9 +202,11 @@ function normaliseIndices(x, y, z) {
 
 function tileURL(x, y, z) {
   var norm = normaliseIndices(x, y, z);
-  return gMapStyles[gActiveMap].url.replace("{x}", norm.x)
-                                   .replace("{y}", norm.y)
-                                   .replace("{z}", norm.z);
+  return gMapStyles[gActiveMap].url
+         .replace("{x}", norm.x)
+         .replace("{y}", norm.y)
+         .replace("{z}", norm.z)
+         .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)));
 }
 
 // Returns true if the tile is outside the current view.
@@ -279,34 +285,50 @@ function drawMap() {
       }
     }
   }
-  if (gTrack.length)
+  if (gTrack.length) {
+    gLastDrawnPoint = null;
     for (var i = 0; i < gTrack.length; i++) {
-      drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude);
+      drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
+                     (i + 1 >= gTrack.length));
     }
+  }
 }
 
-function drawTrackPoint(aLatitude, aLongitude) {
+function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
   var trackpoint = gps2xy(aLatitude, aLongitude);
-  gContext.strokeStyle = "#FF0000";
-  gContext.fillStyle = gContext.strokeStyle;
-  gContext.lineWidth = 2;
-  gContext.lineCap = "round";
-  gContext.lineJoin = "round";
-  gContext.beginPath();
-  if (!gLastTrackPoint || gLastTrackPoint == trackpoint) {
-    gContext.arc((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2,
-                 (trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2,
+  // lastPoint is for optimizing (not actually executing the draw until the last)
+  trackpoint.optimized = (lastPoint === false);
+
+  if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
+    gContext.strokeStyle = "#FF0000";
+    gContext.fillStyle = gContext.strokeStyle;
+    gContext.lineWidth = 2;
+    gContext.lineCap = "round";
+    gContext.lineJoin = "round";
+  }
+  if (!gLastDrawnPoint || gLastDrawnPoint == trackpoint) {
+    // This breaks optimiziation, so make sure to close path and reset optimization.
+    if (gLastDrawnPoint && gLastDrawnPoint.optimized)
+      gContext.stroke();
+    gContext.beginPath();
+    trackpoint.optimized = false;
+    gContext.arc(Math.round((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
+                 Math.round((trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2),
                  gContext.lineWidth, 0, Math.PI * 2, false);
     gContext.fill();
   }
   else {
-    gContext.moveTo((gLastTrackPoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2,
-                    (gLastTrackPoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2);
-    gContext.lineTo((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2,
-                    (trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2);
-    gContext.stroke();
+    if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
+      gContext.beginPath();
+      gContext.moveTo(Math.round((gLastDrawnPoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
+                      Math.round((gLastDrawnPoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2));
+    }
+    gContext.lineTo(Math.round((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
+                    Math.round((trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2));
+    if (!trackpoint.optimized)
+      gContext.stroke();
   }
-  gLastTrackPoint = trackpoint;
+  gLastDrawnPoint = trackpoint;
 }
 
 var mapEvHandler = {
@@ -488,9 +510,10 @@ function startTracking() {
                                heading: position.coords.heading,
                                speed: position.coords.speed},
                       beginSegment: !gLastTrackPoint};
+        gLastTrackPoint = tPoint;
         gTrack.push(tPoint);
         try { gTrackStore.push(tPoint); } catch(e) {}
-        drawTrackPoint(position.coords.latitude, position.coords.longitude);
+        var redrawn = false;
         if (gCenterPosition) {
           var posCoord = gps2xy(position.coords.latitude,
                                 position.coords.longitude);
@@ -498,9 +521,12 @@ function startTracking() {
               Math.abs(gPos.y - posCoord.y) > gCanvas.height * gZoomFactor / 4) {
             gPos.x = posCoord.x;
             gPos.y = posCoord.y;
-            drawMap();
+            drawMap(); // This draws the current point as well.
+            redrawn = true;
           }
         }
+        if (!redrawn)
+          drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
       },
       function(error) {
         // Ignore erros for the moment, but this is good for debugging.
