@@ -11,9 +11,5 @@
     "32": "/style/lanteaIcon32.png",
     "64": "/style/lanteaIcon64.png",
     "128": "/style/lanteaIcon128.png"
-  },
-  "installs_allowed_from": [
-    "https://apps-preview.mozilla.org",
-    "https://marketplace.mozilla.org"
-  ]
+  }
 }
