@@ -92,6 +92,10 @@ h1 {
   body {
     font-size: 10px;
   }
+  #overlayArea {
+    top: 2px;
+    left: 2px;
+  }
   #copyright {
     bottom: 1px;
     right: 1px;
