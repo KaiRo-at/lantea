@@ -89,7 +89,12 @@ h1 {
 
 
 @media screen and (max-width: 500px) {
+  body {
+    font-size: 10px;
+  }
   #copyright {
+    bottom: 1px;
+    right: 1px;
     font-size: 8px;
   }
 }
