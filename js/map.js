@@ -124,6 +124,7 @@ function initMap() {
   gCanvas.addEventListener("touchcancel", mapEvHandler, false);
   gCanvas.addEventListener("touchleave", mapEvHandler, false);
 
+  // XXX deprecated? see https://groups.google.com/forum/?fromgroups#!topic/mozilla.dev.planning/kuhrORubaRY[1-25]
   gCanvas.addEventListener("DOMMouseScroll", mapEvHandler, false);
   gCanvas.addEventListener("mousewheel", mapEvHandler, false);
 
