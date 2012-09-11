@@ -262,7 +262,7 @@ function drawMap() {
   // Go through all the tiles we want.
   // If any of them aren't loaded or being loaded, do so.
   for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
-    for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) {
+    for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
       var xoff = (x * size - xMin) / gZoomFactor;
       var yoff = (y * size - yMin) / gZoomFactor;
       var tileKey = encodeIndex(x, y, gPos.z);
