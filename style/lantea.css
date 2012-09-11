@@ -86,3 +86,19 @@ h1 {
   border-radius: 3px;
   padding: 0 3px;
 }
+
+
+@media screen and (max-width: 500px) {
+  body {
+    font-size: 10px;
+  }
+  #overlayArea {
+    top: 1px;
+    left: 1px;
+  }
+  #copyright {
+    bottom: 1px;
+    right: 1px;
+    font-size: 8px;
+  }
+}
