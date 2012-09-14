@@ -6,6 +6,8 @@
 var iDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
 var mainDB;
 
+var gUIHideCountdown = 0;
+
 window.onload = function() {
   var mSel = document.getElementById("mapSelector");
   for (var mapStyle in gMapStyles) {
@@ -14,6 +16,21 @@ window.onload = function() {
     opt.text = gMapStyles[mapStyle].name;
     mSel.add(opt, null);
   }
+
+  var areas = document.getElementsByClassName('overlayArea');
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].addEventListener("mouseup", uiEvHandler, false);
+    areas[i].addEventListener("mousemove", uiEvHandler, false);
+    areas[i].addEventListener("mousedown", uiEvHandler, false);
+    areas[i].addEventListener("mouseout", uiEvHandler, false);
+
+    areas[i].addEventListener("touchstart", uiEvHandler, false);
+    areas[i].addEventListener("touchmove", uiEvHandler, false);
+    areas[i].addEventListener("touchend", uiEvHandler, false);
+    areas[i].addEventListener("touchcancel", uiEvHandler, false);
+    areas[i].addEventListener("touchleave", uiEvHandler, false);
+  }
+
 
   initDB();
   initMap();
@@ -52,10 +69,35 @@ function initDB() {
   };
 }
 
+function showUI() {
+  if (gUIHideCountdown <= 0) {
+    var areas = document.getElementsByClassName('overlayArea');
+    for (var i = 0; i <= areas.length - 1; i++) {
+      areas[i].classList.remove("hidden");
+    }
+    setTimeout(maybeHideUI, 1000);
+  }
+  gUIHideCountdown = 5;
+}
+
+function maybeHideUI() {
+  gUIHideCountdown--;
+  if (gUIHideCountdown <= 0) {
+    var areas = document.getElementsByClassName('overlayArea');
+    for (var i = 0; i <= areas.length - 1; i++) {
+      areas[i].classList.add("hidden");
+    }
+  }
+  else {
+    setTimeout(maybeHideUI, 1000);
+  }
+}
+
 function toggleTrackArea() {
   var fs = document.getElementById("trackArea");
   if (fs.style.display != "block") {
     fs.style.display = "block";
+    showUI();
   }
   else {
     fs.style.display = "none";
@@ -66,11 +108,29 @@ function toggleSettings() {
   var fs = document.getElementById("settingsArea");
   if (fs.style.display != "block") {
     fs.style.display = "block";
+    showUI();
   }
   else {
     fs.style.display = "none";
   }
 }
+
+var uiEvHandler = {
+  handleEvent: function(aEvent) {
+    var touchEvent = aEvent.type.indexOf('touch') != -1;
+
+    switch (aEvent.type) {
+      case "mousedown":
+      case "touchstart":
+      case "mousemove":
+      case "touchmove":
+      case "mouseup":
+      case "touchend":
+        showUI();
+        break;
+    }
+  }
+};
 
 function makeISOString(aTimestamp) {
   // ISO time format is YYYY-MM-DDTHH:mm:ssZ

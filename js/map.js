@@ -145,6 +145,7 @@ function resizeAndDraw() {
   gCanvas.width = canvasWidth;
   gCanvas.height = canvasHeight;
   drawMap();
+  showUI();
 }
 
 function zoomIn() {
@@ -369,6 +370,7 @@ var mapEvHandler = {
         }
         gLastMouseX = x;
         gLastMouseY = y;
+        showUI();
         break;
       case "mousemove":
       case "touchmove":
@@ -380,6 +382,7 @@ var mapEvHandler = {
           gPos.x -= dX * gZoomFactor;
           gPos.y -= dY * gZoomFactor;
           drawMap();
+          showUI();
         }
         gLastMouseX = x;
         gLastMouseY = y;
@@ -387,6 +390,7 @@ var mapEvHandler = {
       case "mouseup":
       case "touchend":
         gDragging = false;
+        showUI();
         break;
       case "mouseout":
       case "touchcancel":

@@ -27,6 +27,16 @@ h1 {
   text-align: center;
 }
 
+.overlayArea {
+  transition-property: opacity;
+  transition-duration: .2s;
+}
+
+.overlayArea.hidden {
+  opacity: 0;
+  transition-duration: 1s;
+}
+
 .overlayArea:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
 }
