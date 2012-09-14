@@ -187,6 +187,7 @@ function setMapStyle() {
     gTiles = {};
     document.getElementById("copyright").innerHTML =
         gMapStyles[gActiveMap].copyright;
+    showUI();
     drawMap();
   }
 }
