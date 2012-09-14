@@ -43,7 +43,7 @@ h1 {
 
 .overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
 .overlayArea select:-moz-system-metric(touch-enabled) {
-  font-size: 2.5mozmm;
+  font-size: 3mozmm;
 }
 
 #zoomLevel {
