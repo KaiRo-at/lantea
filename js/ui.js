@@ -139,8 +139,7 @@ var gPrefs = {
     if (!mainDB)
       return;
     var success = false;
-    var transaction = mainDB.transaction([this.objStore],
-                                         IDBTransaction.READ_WRITE);
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
     var objStore = transaction.objectStore(this.objStore);
     var request = objStore.put(aValue, aKey);
     request.onsuccess = function(event) {
@@ -159,8 +158,7 @@ var gPrefs = {
     if (!mainDB)
       return;
     var success = false;
-    var transaction = mainDB.transaction([this.objStore],
-                                         IDBTransaction.READ_WRITE);
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
     var request = transaction.objectStore(this.objStore).delete(aKey);
     request.onsuccess = function(event) {
       success = true;
@@ -206,8 +204,7 @@ var gTrackStore = {
   push: function(aValue, aCallback) {
     if (!mainDB)
       return;
-    var transaction = mainDB.transaction([this.objStore],
-                                         IDBTransaction.READ_WRITE);
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
     var objStore = transaction.objectStore(this.objStore);
     var request = objStore.add(aValue);
     request.onsuccess = function(event) {
@@ -225,8 +222,7 @@ var gTrackStore = {
     if (!mainDB)
       return;
     var success = false;
-    var transaction = mainDB.transaction([this.objStore],
-                                         IDBTransaction.READ_WRITE);
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
     var request = transaction.objectStore(this.objStore).clear();
     request.onsuccess = function(event) {
       success = true;
