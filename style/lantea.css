@@ -11,7 +11,7 @@ h1 {
   display: none;
 }
 
-#overlayArea {
+#menuArea {
   position: absolute;
   /* width: 30em; */
   left: 1%;
@@ -19,12 +19,20 @@ h1 {
   z-index: 5;
 }
 
-#overlayArea:-moz-system-metric(touch-enabled) {
+#zoomArea {
+  position: absolute;
+  right: 1%;
+  top: 1em;
+  z-index: 5;
+  text-align: center;
+}
+
+.overlayArea:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
 }
 
-#overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
-#overlayArea select:-moz-system-metric(touch-enabled) {
+.overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
+.overlayArea select:-moz-system-metric(touch-enabled) {
   font-size: 2.5mozmm;
 }
 
@@ -92,9 +100,13 @@ h1 {
   body {
     font-size: 10px;
   }
-  #overlayArea {
+  #menuArea {
     top: 1px;
     left: 1px;
+  }
+  #zoomArea {
+    top: 1px;
+    right: 1px;
   }
   #copyright {
     bottom: 1px;
