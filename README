@@ -1,0 +1,31 @@
+This web app is mainly targeted at mobile devices and intended for people
+finding their way around as well as documenting travels.
+
+Maps are being displayed in default "Mapnik" OpenStreetMap style by default,
+but other styles like Cycle Map or Transport Map are available.
+
+The second feature is "tracking" of locations, meaning the ability to display
+your location and record a track of your movements for documentation.
+This track (most useful if you have a GPS receiver in or connected to your
+device) can be saved in GPX format. You can use those saved files with many
+applications to display them and show others where you have been or e.g. edit
+OpenStreetMap on the basis of that recorded information.
+
+Note that Lantea Maps does not send any location data to anyone else, it's
+recorded locally on your device only.
+
+The app name "Lantea" is based on a fictional mostly-ocean planet in the
+"Stargate: Atlantis" TV series, on which the Ancients erected the artificial
+"island" city of Atlantis.
+
+
+This app is listed in the Mozilla Marketplace at
+https://marketplace.mozilla.org/app/lantea-maps/
+and is running on http://lantea.kairo.at/
+
+
+The main repo is http://git-public.kairo.at/?p=lantea.git;a=summary but it's
+listed on GitHub at https://github.com/KaiRo-at/lantea for convenience for
+potential contributors.
+
+Please don't use GitHub for issue tracking but http://bugzilla.kairo.at/
