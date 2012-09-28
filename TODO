@@ -1,0 +1,33 @@
+Tasks to complete for Lantea Maps:
+
+Required:
+
+* Cache map tiles in the indexedDB
+** Use an intelligent algorithm to automatically try (async) updating tiles if they have a certain age
+*** If they have changed, possibly also try (async) updates of other cached zoom levels covering this area
+** Clear cached tiles option
+* Show a notification when we are loading tiles or saved data
+* Display length and duration of track
+* Display movement speed
+* Display location accuracy
+* Show a better visible marker for the current location, possibly also indicating movement direction/speed
+* Support pinch zoom gestures
+* Smoother animations for panning
+* Smooth animations for zooming, probably using some canvas magic
+* Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
+* Full screen mode
+* Save GPX tiles to the web (OSM? Public cloud service? Private service?)
+* Better GPX saving implementation [blocked by missing web APIs]
+
+Nice To Have:
+
+* Possibility to auto-rotate map to match movement direction
+* GPS details display (satellite visibility/strength) [blocked by missing web APIs]
+* Magnetic compass display [blocked by missing web APIs]
+
+Future Possibilities:
+
+* Routing / Turn-by-turn navigation
+* POI display
+* Search address
+* Mark a target location and show distance to it
