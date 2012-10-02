@@ -6,6 +6,7 @@ Required:
 ** Use an intelligent algorithm to automatically try (async) updating tiles if they have a certain age
 *** If they have changed, possibly also try (async) updates of other cached zoom levels covering this area
 ** Clear cached tiles option
+* Find the bug that messes up the display when panning on not fully loaded tiles (web connection down)
 * Show a notification when we are loading tiles or saved data
 * Display length and duration of track
 * Display movement speed
@@ -18,6 +19,7 @@ Required:
 * Full screen mode
 * Save GPX tiles to the web (OSM? Public cloud service? Private service?)
 * Better GPX saving implementation [blocked by missing web APIs]
+** Set file name to save into to a good default (date + maybe some location name)
 
 Nice To Have:
 
