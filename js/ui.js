@@ -115,6 +115,30 @@ function toggleSettings() {
   }
 }
 
+function toggleFullscreen() {
+  if ((document.fullScreenElement && document.fullScreenElement !== null) ||
+      (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
+      (document.webkitFullScreenElement && document.webkitFullScreenElement !== null)) {
+    if (document.cancelFullScreen) {
+      document.cancelFullScreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.webkitCancelFullScreen) {
+      document.webkitCancelFullScreen();
+    }
+  }
+  else {
+    var elem = document.getElementById("body");
+    if (elem.requestFullScreen) {
+      elem.requestFullScreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullScreen) {
+      elem.webkitRequestFullScreen();
+    }
+  }
+}
+
 var uiEvHandler = {
   handleEvent: function(aEvent) {
     var touchEvent = aEvent.type.indexOf('touch') != -1;

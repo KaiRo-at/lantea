@@ -16,7 +16,6 @@ Required:
 * Smoother animations for panning
 * Smooth animations for zooming, probably using some canvas magic
 * Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
-* Full screen mode
 * Save GPX tiles to the web (OSM? Public cloud service? Private service?)
 * Better GPX saving implementation [blocked by missing web APIs]
 ** Set file name to save into to a good default (date + maybe some location name)

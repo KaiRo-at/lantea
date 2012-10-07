@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="style/lantea.css">
   <link rel="shortcut icon" href="style/lanteaIcon16.png" type="image/png">
 </head>
-<body>
+<body id="body">
 <h1>Lantea Map</h1>
 
 <div id="menuArea" class="overlayArea">
@@ -51,6 +51,12 @@ Map style:
 <span id="zoomLevel">Z</span><br/>
 <input type="button" id="zoomOutButton" value="-"
        onclick="zoomOut();">
+</div>
+
+<div id="fullscreenArea" class="overlayArea">
+<!-- other possible characters: &#x25F0; -->
+<input type="button" id="fullscreenButton" value="&#x25A3;"
+       onclick="toggleFullscreen();">
 </div>
 
 <p id="debug" class="debugHide"></p>

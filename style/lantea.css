@@ -27,6 +27,14 @@ h1 {
   text-align: center;
 }
 
+#fullscreenArea {
+  position: absolute;
+  right: 1%;
+  bottom: 2em;
+  z-index: 5;
+  text-align: center;
+}
+
 .overlayArea {
   transition-property: opacity;
   transition-duration: .2s;
@@ -52,7 +60,6 @@ h1 {
   padding: 0 3px;
 }
 
-
 #settingsArea,
 #trackArea {
   display: none;
@@ -70,10 +77,10 @@ h1 {
 
 #map {
   border: 0;
-  top: 1px;
-  left: 1px;
-  right: 1px;
-  bottom: 1px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
 }
 
@@ -120,6 +127,10 @@ h1 {
   #zoomArea {
     top: 1px;
     right: 1px;
+  }
+  #fullscreenArea {
+    right: 1px;
+    bottom: 10px;
   }
   #copyright {
     bottom: 1px;
