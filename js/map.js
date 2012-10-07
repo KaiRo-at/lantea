@@ -14,23 +14,27 @@ var gMapStyles = {
   osm_mapnik:
     {name: "OpenStreetMap (Mapnik)",
      url: "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
-     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   osm_cyclemap:
     {name: "Cycle Map (OSM)",
      url: "http://[a-c].tile.opencyclemap.org/cycle/{z}/{x}/{y}.png",
-     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   osm_transmap:
     {name: "Transport Map (OSM)",
      url: "http://[a-c].tile2.opencyclemap.org/transport/{z}/{x}/{y}.png",
-     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'},
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   mapquest_open:
     {name: "MapQuest OSM",
-     url: "http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png",
-     copyright: 'Data, imagery and map information provided by MapQuest, <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
+     url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png",
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors (<a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>), tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>.'},
   mapquest_aerial:
     {name: "MapQuest Open Aerial",
-     url: "http://oatile1.mqcdn.com/naip/{z}/{x}/{y}.png",
-     copyright: 'Data, imagery and map information provided by MapQuest, <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
+     url: "http://oatile[1-4].mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg",
+     copyright: 'Tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>, portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency.'},
+  opengeoserver_arial:
+    {name: "OpenGeoServer Aerial",
+     url: "http://services.opengeoserver.org/tiles/1.0.0/globe.aerial_EPSG3857/{z}/{x}/{y}.png?origin=nw",
+     copyright: 'Tiles by <a href="http://www.opengeoserver.org/">OpenGeoServer.org</a>, <a href="https://creativecommons.org/licenses/by/3.0/at/">CC-BY 3.0 AT</a>.'},
   google_map:
     {name: "Google Maps",
      url: " http://mt1.google.com/vt/x={x}&y={y}&z={z}",
@@ -211,7 +215,8 @@ function tileURL(x, y, z) {
          .replace("{x}", norm.x)
          .replace("{y}", norm.y)
          .replace("{z}", norm.z)
-         .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)));
+         .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)))
+         .replace("[1-4]", 1 + Math.floor(Math.random() * 3));
 }
 
 // Returns true if the tile is outside the current view.
