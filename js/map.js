@@ -8,6 +8,12 @@ var gDebug = false;
 var gTileSize = 256;
 var gMaxZoom = 18; // The minimum is 0.
 
+var gMinTrackAccuracy = 1000; // meters
+var gTrackWidth = 2; // pixels
+var gTrackColor = "#FF0000";
+var gCurLocSize = 5; // pixels
+var gCurLocColor = "#800000";
+
 var gMapStyles = {
   // OSM tile usage policy: http://wiki.openstreetmap.org/wiki/Tile_usage_policy
   // Find some more OSM ones at http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Tile_servers
@@ -64,6 +70,8 @@ var gGeoWatchID;
 var gTrack = [];
 var gLastTrackPoint, gLastDrawnPoint;
 var gCenterPosition = true;
+
+var gCurPosMapCache;
 
 function initMap() {
   gGeolocation = navigator.geolocation;
@@ -308,11 +316,13 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
   var trackpoint = gps2xy(aLatitude, aLongitude);
   // lastPoint is for optimizing (not actually executing the draw until the last)
   trackpoint.optimized = (lastPoint === false);
+  var mappos = {x: Math.round((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
+                y: Math.round((trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2)};
 
   if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
-    gContext.strokeStyle = "#FF0000";
+    gContext.strokeStyle = gTrackColor;
     gContext.fillStyle = gContext.strokeStyle;
-    gContext.lineWidth = 2;
+    gContext.lineWidth = gTrackWidth;
     gContext.lineCap = "round";
     gContext.lineJoin = "round";
   }
@@ -322,8 +332,7 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
       gContext.stroke();
     gContext.beginPath();
     trackpoint.optimized = false;
-    gContext.arc(Math.round((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
-                 Math.round((trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2),
+    gContext.arc(mappos.x, mappos.y,
                  gContext.lineWidth, 0, Math.PI * 2, false);
     gContext.fill();
   }
@@ -333,12 +342,38 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
       gContext.moveTo(Math.round((gLastDrawnPoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
                       Math.round((gLastDrawnPoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2));
     }
-    gContext.lineTo(Math.round((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
-                    Math.round((trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2));
+    gContext.lineTo(mappos.x, mappos.y);
     if (!trackpoint.optimized)
       gContext.stroke();
   }
   gLastDrawnPoint = trackpoint;
+}
+
+function drawCurrentLocation(trackPoint) {
+  var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.ccords.longitude);
+  var circleSize = gCurLocSize;
+  var mappos = {x: Math.round((locpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
+                y: Math.round((locpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2)};
+
+  // Initialize or draw cache.
+  if (!gCurPosMapCache) 
+    gCurPosMapCache = {point: locpoint,
+                       data: context.createImageData(circleSize, circleSize)};
+  else
+    gContext.putImageData(gCurPosMapCache, mappos.x - circleSize / 2,
+                                           mappos.y - circleSize / 2);
+
+  // Cache overdrawn area.
+  gCurPosMapCache = gContext.getImageData(mappos.x - circleSize / 2,
+                                          mappos.y - circleSize / 2,
+                                          circleSize, circleSize);
+
+  gContext.strokeStyle = gCurLocColor;
+  gContext.fillStyle = gContext.strokeStyle;
+  gContext.beginPath();
+  gContext.arc(mappos.x, mappos.y,
+               circleSize, 0, Math.PI * 2, false);
+  gContext.fill();
 }
 
 var mapEvHandler = {
@@ -523,23 +558,27 @@ function startTracking() {
                                heading: position.coords.heading,
                                speed: position.coords.speed},
                       beginSegment: !gLastTrackPoint};
-        gLastTrackPoint = tPoint;
-        gTrack.push(tPoint);
-        try { gTrackStore.push(tPoint); } catch(e) {}
-        var redrawn = false;
-        if (gCenterPosition) {
-          var posCoord = gps2xy(position.coords.latitude,
-                                position.coords.longitude);
-          if (Math.abs(gPos.x - posCoord.x) > gCanvas.width * gZoomFactor / 4 ||
-              Math.abs(gPos.y - posCoord.y) > gCanvas.height * gZoomFactor / 4) {
-            gPos.x = posCoord.x;
-            gPos.y = posCoord.y;
-            drawMap(); // This draws the current point as well.
-            redrawn = true;
+        // Only add point to track is accuracy is good enough.
+        if (tPoint.coords.accuracy < gMinTrackAccuracy) {
+          gLastTrackPoint = tPoint;
+          gTrack.push(tPoint);
+          try { gTrackStore.push(tPoint); } catch(e) {}
+          var redrawn = false;
+          if (gCenterPosition) {
+            var posCoord = gps2xy(position.coords.latitude,
+                                  position.coords.longitude);
+            if (Math.abs(gPos.x - posCoord.x) > gCanvas.width * gZoomFactor / 4 ||
+                Math.abs(gPos.y - posCoord.y) > gCanvas.height * gZoomFactor / 4) {
+              gPos.x = posCoord.x;
+              gPos.y = posCoord.y;
+              drawMap(); // This draws the current point as well.
+              redrawn = true;
+            }
           }
+          if (!redrawn)
+            drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
         }
-        if (!redrawn)
-          drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
+        drawCurrentLocation(tPoint);
       },
       function(error) {
         // Ignore erros for the moment, but this is good for debugging.
