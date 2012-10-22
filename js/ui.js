@@ -31,6 +31,11 @@ window.onload = function() {
     areas[i].addEventListener("touchleave", uiEvHandler, false);
   }
 
+  if (/Mozilla\/5.0 \(Mobile;/.test(navigator.useragent)) {
+    // For Firefox OS, don't display the "save" button.
+    // Do this by setting the debugHide class for testing in debug mode.
+    document.getElementById("saveTrackButton").classList.add("debugHide");
+  }
 
   initDB();
   initMap();
