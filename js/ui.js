@@ -47,7 +47,7 @@ window.onload = function() {
       if (gWaitCounter <= 0)
         gWaitCounter = 0;
       else
-        document.getElementById("debug").textContent = "Loading prefs failed.";
+        document.getElementById("debug").textContent = "Loading failed (waiting for init).";
 
       gMapPrefsLoaded = true;
       resizeAndDraw();
