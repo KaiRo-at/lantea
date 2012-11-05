@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var gCanvas, gContext, gGeolocation;
+var gMapCanvas, gMapContext, gTrackCanvas, gTrackContext, gGeolocation;
 var gDebug = false;
 
 var gTileSize = 256;
@@ -11,8 +11,8 @@ var gMaxZoom = 18; // The minimum is 0.
 var gMinTrackAccuracy = 1000; // meters
 var gTrackWidth = 2; // pixels
 var gTrackColor = "#FF0000";
-var gCurLocSize = 5; // pixels
-var gCurLocColor = "#800000";
+var gCurLocSize = 6; // pixels
+var gCurLocColor = "#A00000";
 
 var gMapStyles = {
   // OSM tile usage policy: http://wiki.openstreetmap.org/wiki/Tile_usage_policy
@@ -75,8 +75,10 @@ var gCurPosMapCache;
 
 function initMap() {
   gGeolocation = navigator.geolocation;
-  gCanvas = document.getElementById("map");
-  gContext = gCanvas.getContext("2d");
+  gMapCanvas = document.getElementById("map");
+  gMapContext = gMapCanvas.getContext("2d");
+  gTrackCanvas = document.getElementById("track");
+  gTrackContext = gTrackCanvas.getContext("2d");
   if (!gActiveMap)
     gActiveMap = "osm_mapnik";
 
@@ -93,69 +95,81 @@ function initMap() {
   var loopCnt = 0;
   var getPersistentPrefs = function() {
     if (mainDB) {
+      gWaitCounter++;
       gPrefs.get("position", function(aValue) {
         if (aValue) {
           gPos = aValue;
-          drawMap();
+          gWaitCounter--;
         }
       });
+      gWaitCounter++;
       gPrefs.get("center_map", function(aValue) {
         if (aValue === undefined)
           document.getElementById("centerCheckbox").checked = true;
         else
           document.getElementById("centerCheckbox").checked = aValue;
         setCentering(document.getElementById("centerCheckbox"));
+        gWaitCounter--;
       });
+      gWaitCounter++;
       gPrefs.get("tracking_enabled", function(aValue) {
         if (aValue === undefined)
           document.getElementById("trackCheckbox").checked = true;
         else
           document.getElementById("trackCheckbox").checked = aValue;
-        setTracking(document.getElementById("trackCheckbox"));
+        gWaitCounter--;
       });
-      gMapPrefsLoaded = true;
+      gWaitCounter++;
+      gTrackStore.getList(function(aTPoints) {
+        if (gDebug)
+          document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
+        if (aTPoints.length) {
+          gTrack = aTPoints;
+        }
+        gWaitCounter--;
+      });
     }
     else
       setTimeout(getPersistentPrefs, 100);
     loopCnt++;
-    if (loopCnt > 20) {
-      gMapPrefsLoaded = true;
-      return;
+    if (loopCnt > 50) {
+      document.getElementById("debug").textContent = "Loading prefs failed.";
     }
   };
   getPersistentPrefs();
 
-  gCanvas.addEventListener("mouseup", mapEvHandler, false);
-  gCanvas.addEventListener("mousemove", mapEvHandler, false);
-  gCanvas.addEventListener("mousedown", mapEvHandler, false);
-  gCanvas.addEventListener("mouseout", mapEvHandler, false);
+  gTrackCanvas.addEventListener("mouseup", mapEvHandler, false);
+  gTrackCanvas.addEventListener("mousemove", mapEvHandler, false);
+  gTrackCanvas.addEventListener("mousedown", mapEvHandler, false);
+  gTrackCanvas.addEventListener("mouseout", mapEvHandler, false);
 
-  gCanvas.addEventListener("touchstart", mapEvHandler, false);
-  gCanvas.addEventListener("touchmove", mapEvHandler, false);
-  gCanvas.addEventListener("touchend", mapEvHandler, false);
-  gCanvas.addEventListener("touchcancel", mapEvHandler, false);
-  gCanvas.addEventListener("touchleave", mapEvHandler, false);
+  gTrackCanvas.addEventListener("touchstart", mapEvHandler, false);
+  gTrackCanvas.addEventListener("touchmove", mapEvHandler, false);
+  gTrackCanvas.addEventListener("touchend", mapEvHandler, false);
+  gTrackCanvas.addEventListener("touchcancel", mapEvHandler, false);
+  gTrackCanvas.addEventListener("touchleave", mapEvHandler, false);
 
   // XXX deprecated? see https://groups.google.com/forum/?fromgroups#!topic/mozilla.dev.planning/kuhrORubaRY[1-25]
-  gCanvas.addEventListener("DOMMouseScroll", mapEvHandler, false);
-  gCanvas.addEventListener("mousewheel", mapEvHandler, false);
+  gTrackCanvas.addEventListener("DOMMouseScroll", mapEvHandler, false);
+  gTrackCanvas.addEventListener("mousewheel", mapEvHandler, false);
 
   document.getElementById("copyright").innerHTML =
       gMapStyles[gActiveMap].copyright;
 
   gLoadingTile = new Image();
   gLoadingTile.src = "style/loading.png";
+  gWaitCounter++;
+  gLoadingTile.onload = function() { gWaitCounter--; };
 }
 
 function resizeAndDraw() {
   var viewportWidth = Math.min(window.innerWidth, window.outerWidth);
   var viewportHeight = Math.min(window.innerHeight, window.outerHeight);
 
-  var canvasWidth = viewportWidth - 2;
-  var canvasHeight = viewportHeight - 2;
-  gCanvas.style.position = "fixed";
-  gCanvas.width = canvasWidth;
-  gCanvas.height = canvasHeight;
+  gMapCanvas.width = viewportWidth;
+  gMapCanvas.height = viewportHeight;
+  gTrackCanvas.width = viewportWidth;
+  gTrackCanvas.height = viewportHeight;
   drawMap();
   showUI();
 }
@@ -230,20 +244,17 @@ function tileURL(x, y, z) {
 // Returns true if the tile is outside the current view.
 function isOutsideWindow(t) {
   var pos = decodeIndex(t);
-  var x = pos[0];
-  var y = pos[1];
-  var z = pos[2];
 
-  var zoomFactor = Math.pow(2, gMaxZoom - z);
-  var wid = gCanvas.width * zoomFactor;
-  var ht = gCanvas.height * zoomFactor;
+  var zoomFactor = Math.pow(2, gMaxZoom - pos.z);
+  var wid = gMapCanvas.width * zoomFactor;
+  var ht = gMapCanvas.height * zoomFactor;
 
-  x *= zoomFactor;
-  y *= zoomFactor;
+  pos.x *= zoomFactor;
+  pos.y *= zoomFactor;
 
   var sz = gTileSize * zoomFactor;
-  if (x > gPos.x + wid / 2 || y > gPos.y + ht / 2 ||
-      x + sz < gPos.x - wid / 2 || y - sz < gPos.y - ht / 2)
+  if (pos.x > gPos.x + wid / 2 || pos.y > gPos.y + ht / 2 ||
+      pos.x + sz < gPos.x - wid / 2 || pos.y - sz < gPos.y - ht / 2)
     return true;
   return false;
 }
@@ -254,7 +265,8 @@ function encodeIndex(x, y, z) {
 }
 
 function decodeIndex(encodedIdx) {
-  return encodedIdx.split(",", 3);
+  var ind = encodedIdx.split(",", 3);
+  return {x: ind[0], y: ind[1], z: ind[2]};
 }
 
 function drawMap() {
@@ -265,8 +277,8 @@ function drawMap() {
   // }
   document.getElementById("zoomLevel").textContent = gPos.z;
   gZoomFactor = Math.pow(2, gMaxZoom - gPos.z);
-  var wid = gCanvas.width * gZoomFactor; // Width in level 18 pixels.
-  var ht = gCanvas.height * gZoomFactor; // Height in level 18 pixels.
+  var wid = gMapCanvas.width * gZoomFactor; // Width in level 18 pixels.
+  var ht = gMapCanvas.height * gZoomFactor; // Height in level 18 pixels.
   var size = gTileSize * gZoomFactor; // Tile size in level 18 pixels.
 
   var xMin = gPos.x - wid / 2; // Corners of the window in level 18 pixels.
@@ -281,30 +293,42 @@ function drawMap() {
   // If any of them aren't loaded or being loaded, do so.
   for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
     for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
-      var xoff = (x * size - xMin) / gZoomFactor;
-      var yoff = (y * size - yMin) / gZoomFactor;
+      // Round here is **CRUCIAL** otherwise the images are filtered
+      // and the performance sucks (more than expected).
+      var xoff = Math.round((x * size - xMin) / gZoomFactor);
+      var yoff = Math.round((y * size - yMin) / gZoomFactor);
       var tileKey = encodeIndex(x, y, gPos.z);
       if (gTiles[tileKey] && gTiles[tileKey].complete) {
-        // Round here is **CRUCIAL** otherwise the images are filtered
-        // and the performance sucks (more than expected).
-        gContext.drawImage(gTiles[tileKey], Math.round(xoff), Math.round(yoff));
+        gMapContext.drawImage(gTiles[tileKey], xoff, yoff);
       }
       else {
+        // Draw placeholder, and then initiate loading/drawing of real one.
+        gMapContext.drawImage(gLoadingTile, xoff, yoff);
         if (!gTiles[tileKey]) {
           gTiles[tileKey] = new Image();
+          // Use alt field to communicate info to .onload.
+          gTiles[tileKey].alt = gPos.z + ":" + xoff + ":" + yoff;
           gTiles[tileKey].src = tileURL(x, y, gPos.z);
           gTiles[tileKey].onload = function() {
-            // TODO: Just render this tile where it should be.
-            // context.drawImage(gTiles[tileKey], Math.round(xoff), Math.round(yoff)); // Doesn't work for some reason.
-            drawMap();
+            var tdata = this.alt.split(":", 3);
+            // Draw the tile if we're still looking at the same zoom.
+            if (tdata[0] == gPos.z) {
+              gMapContext.drawImage(this, tdata[1], tdata[2]);
+            }
+            this.alt = "";
           }
         }
-        gContext.drawImage(gLoadingTile, Math.round(xoff), Math.round(yoff));
+        else {
+          // Update position to draw this image to when loaded.
+          gTiles[tileKey].alt = gPos.z + ":" + xoff + ":" + yoff;
+        }
       }
     }
   }
+  gLastDrawnPoint = null;
+  gCurPosMapCache = undefined;
+  gTrackContext.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
   if (gTrack.length) {
-    gLastDrawnPoint = null;
     for (var i = 0; i < gTrack.length; i++) {
       drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
                      (i + 1 >= gTrack.length));
@@ -316,64 +340,73 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
   var trackpoint = gps2xy(aLatitude, aLongitude);
   // lastPoint is for optimizing (not actually executing the draw until the last)
   trackpoint.optimized = (lastPoint === false);
-  var mappos = {x: Math.round((trackpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
-                y: Math.round((trackpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2)};
+  var mappos = {x: Math.round((trackpoint.x - gPos.x) / gZoomFactor + gMapCanvas.width / 2),
+                y: Math.round((trackpoint.y - gPos.y) / gZoomFactor + gMapCanvas.height / 2)};
 
   if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
-    gContext.strokeStyle = gTrackColor;
-    gContext.fillStyle = gContext.strokeStyle;
-    gContext.lineWidth = gTrackWidth;
-    gContext.lineCap = "round";
-    gContext.lineJoin = "round";
+    gTrackContext.strokeStyle = gTrackColor;
+    gTrackContext.fillStyle = gTrackContext.strokeStyle;
+    gTrackContext.lineWidth = gTrackWidth;
+    gTrackContext.lineCap = "round";
+    gTrackContext.lineJoin = "round";
   }
   if (!gLastDrawnPoint || gLastDrawnPoint == trackpoint) {
     // This breaks optimiziation, so make sure to close path and reset optimization.
     if (gLastDrawnPoint && gLastDrawnPoint.optimized)
-      gContext.stroke();
-    gContext.beginPath();
+      gTrackContext.stroke();
+    gTrackContext.beginPath();
     trackpoint.optimized = false;
-    gContext.arc(mappos.x, mappos.y,
-                 gContext.lineWidth, 0, Math.PI * 2, false);
-    gContext.fill();
+    gTrackContext.arc(mappos.x, mappos.y,
+                      gTrackContext.lineWidth, 0, Math.PI * 2, false);
+    gTrackContext.fill();
   }
   else {
     if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
-      gContext.beginPath();
-      gContext.moveTo(Math.round((gLastDrawnPoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
-                      Math.round((gLastDrawnPoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2));
+      gTrackContext.beginPath();
+      gTrackContext.moveTo(Math.round((gLastDrawnPoint.x - gPos.x) / gZoomFactor + gMapCanvas.width / 2),
+                           Math.round((gLastDrawnPoint.y - gPos.y) / gZoomFactor + gMapCanvas.height / 2));
     }
-    gContext.lineTo(mappos.x, mappos.y);
+    gTrackContext.lineTo(mappos.x, mappos.y);
     if (!trackpoint.optimized)
-      gContext.stroke();
+      gTrackContext.stroke();
   }
   gLastDrawnPoint = trackpoint;
 }
 
 function drawCurrentLocation(trackPoint) {
-  var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.ccords.longitude);
-  var circleSize = gCurLocSize;
-  var mappos = {x: Math.round((locpoint.x - gPos.x) / gZoomFactor + gCanvas.width / 2),
-                y: Math.round((locpoint.y - gPos.y) / gZoomFactor + gCanvas.height / 2)};
+  var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
+  var circleRadius = Math.round(gCurLocSize / 2);
+  var mappos = {x: Math.round((locpoint.x - gPos.x) / gZoomFactor + gMapCanvas.width / 2),
+                y: Math.round((locpoint.y - gPos.y) / gZoomFactor + gMapCanvas.height / 2)};
 
-  // Initialize or draw cache.
-  if (!gCurPosMapCache) 
-    gCurPosMapCache = {point: locpoint,
-                       data: context.createImageData(circleSize, circleSize)};
-  else
-    gContext.putImageData(gCurPosMapCache, mappos.x - circleSize / 2,
-                                           mappos.y - circleSize / 2);
+  undrawCurrentLocation();
 
   // Cache overdrawn area.
-  gCurPosMapCache = gContext.getImageData(mappos.x - circleSize / 2,
-                                          mappos.y - circleSize / 2,
-                                          circleSize, circleSize);
+  gCurPosMapCache =
+      {point: locpoint,
+       radius: circleRadius,
+       data: gTrackContext.getImageData(mappos.x - circleRadius,
+                                        mappos.y - circleRadius,
+                                        circleRadius * 2, circleRadius * 2)};
 
-  gContext.strokeStyle = gCurLocColor;
-  gContext.fillStyle = gContext.strokeStyle;
-  gContext.beginPath();
-  gContext.arc(mappos.x, mappos.y,
-               circleSize, 0, Math.PI * 2, false);
-  gContext.fill();
+  gTrackContext.strokeStyle = gCurLocColor;
+  gTrackContext.fillStyle = gTrackContext.strokeStyle;
+  gTrackContext.beginPath();
+  gTrackContext.arc(mappos.x, mappos.y,
+                    circleRadius, 0, Math.PI * 2, false);
+  gTrackContext.fill();
+}
+
+function undrawCurrentLocation() {
+  if (gCurPosMapCache) {
+    var oldpoint = gCurPosMapCache.point;
+    var oldmp = {x: Math.round((oldpoint.x - gPos.x) / gZoomFactor + gMapCanvas.width / 2),
+                 y: Math.round((oldpoint.y - gPos.y) / gZoomFactor + gMapCanvas.height / 2)};
+    gTrackContext.putImageData(gCurPosMapCache.data,
+                               oldmp.x - gCurPosMapCache.radius,
+                               oldmp.y - gCurPosMapCache.radius);
+    gCurPosMapCache = undefined;
+  }
 }
 
 var mapEvHandler = {
@@ -403,8 +436,8 @@ var mapEvHandler = {
           gDragTouchID = aEvent.changedTouches.item(0).identifier;
           coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
         }
-        var x = coordObj.clientX - gCanvas.offsetLeft;
-        var y = coordObj.clientY - gCanvas.offsetTop;
+        var x = coordObj.clientX - gMapCanvas.offsetLeft;
+        var y = coordObj.clientY - gMapCanvas.offsetTop;
 
         if (touchEvent || aEvent.button === 0) {
           gDragging = true;
@@ -415,8 +448,8 @@ var mapEvHandler = {
         break;
       case "mousemove":
       case "touchmove":
-        var x = coordObj.clientX - gCanvas.offsetLeft;
-        var y = coordObj.clientY - gCanvas.offsetTop;
+        var x = coordObj.clientX - gMapCanvas.offsetLeft;
+        var y = coordObj.clientY - gMapCanvas.offsetTop;
         if (gDragging === true) {
           var dX = x - gLastMouseX;
           var dY = y - gLastMouseY;
@@ -450,15 +483,10 @@ var mapEvHandler = {
           delta = -aEvent.detail / 3;
         }
 
-        // Calculate new center of the map - same point stays under the mouse.
-        // This means that the pixel distance between the old center and point
-        // must equal the pixel distance of the new center and that point.
-        var x = coordObj.clientX - gCanvas.offsetLeft;
-        var y = coordObj.clientY - gCanvas.offsetTop;
         // Debug output: "coordinates" of the point the mouse was over.
         /*
-        var ptCoord = {x: gPos.x + (x - gCanvas.width / 2) * gZoomFactor,
-                       y: gPos.y + (x - gCanvas.height / 2) * gZoomFactor};
+        var ptCoord = {x: gPos.x + (x - gMapCanvas.width / 2) * gZoomFactor,
+                       y: gPos.y + (x - gMapCanvas.height / 2) * gZoomFactor};
         var gpsCoord = xy2gps(ptCoord.x, ptCoord.y);
         var pt2Coord = gps2xy(gpsCoord.latitude, gpsCoord.longitude);
         document.getElementById("debug").textContent =
@@ -466,15 +494,25 @@ var mapEvHandler = {
             gpsCoord.latitude + "/" + gpsCoord.longitude + " - " +
             pt2Coord.x + "/" + pt2Coord.y;
         */
-        // Zoom factor after this action.
-        var newZoomFactor = Math.pow(2, gMaxZoom - gPos.z + (delta > 0 ? -1 : 1));
-        gPos.x -= (x - gCanvas.width / 2) * (newZoomFactor - gZoomFactor);
-        gPos.y -= (y - gCanvas.height / 2) * (newZoomFactor - gZoomFactor);
 
-        if (delta > 0)
-          zoomIn();
-        else if (delta < 0)
-          zoomOut();
+        var newZoomLevel = gPos.z + (delta > 0 ? 1 : -1);
+        if ((newZoomLevel >= 0) && (newZoomLevel <= gMaxZoom)) {
+          // Calculate new center of the map - same point stays under the mouse.
+          // This means that the pixel distance between the old center and point
+          // must equal the pixel distance of the new center and that point.
+          var x = coordObj.clientX - gMapCanvas.offsetLeft;
+          var y = coordObj.clientY - gMapCanvas.offsetTop;
+
+          // Zoom factor after this action.
+          var newZoomFactor = Math.pow(2, gMaxZoom - newZoomLevel);
+          gPos.x -= (x - gMapCanvas.width / 2) * (newZoomFactor - gZoomFactor);
+          gPos.y -= (y - gMapCanvas.height / 2) * (newZoomFactor - gZoomFactor);
+
+          if (delta > 0)
+            zoomIn();
+          else if (delta < 0)
+            zoomOut();
+        }
         break;
     }
   }
@@ -528,23 +566,6 @@ function setTracking(aCheckbox) {
 }
 
 function startTracking() {
-  var loopCnt = 0;
-  var getStoredTrack = function() {
-    if (mainDB)
-      gTrackStore.getList(function(aTPoints) {
-        if (gDebug)
-          document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
-        if (aTPoints.length) {
-          gTrack = aTPoints;
-        }
-      });
-    else
-      setTimeout(getStoredTrack, 100);
-    loopCnt++;
-    if (loopCnt > 20)
-      return;
-  };
-  getStoredTrack();
   if (gGeolocation) {
     gGeoWatchID = gGeolocation.watchPosition(
       function(position) {
@@ -567,8 +588,8 @@ function startTracking() {
           if (gCenterPosition) {
             var posCoord = gps2xy(position.coords.latitude,
                                   position.coords.longitude);
-            if (Math.abs(gPos.x - posCoord.x) > gCanvas.width * gZoomFactor / 4 ||
-                Math.abs(gPos.y - posCoord.y) > gCanvas.height * gZoomFactor / 4) {
+            if (Math.abs(gPos.x - posCoord.x) > gMapCanvas.width * gZoomFactor / 4 ||
+                Math.abs(gPos.y - posCoord.y) > gMapCanvas.height * gZoomFactor / 4) {
               gPos.x = posCoord.x;
               gPos.y = posCoord.y;
               drawMap(); // This draws the current point as well.
@@ -576,6 +597,7 @@ function startTracking() {
             }
           }
           if (!redrawn)
+            undrawCurrentLocation();
             drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
         }
         drawCurrentLocation(tPoint);

@@ -7,6 +7,7 @@ var iDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || w
 var mainDB;
 
 var gUIHideCountdown = 0;
+var gWaitCounter = 0;
 
 window.onload = function() {
   var mSel = document.getElementById("mapSelector");
@@ -39,7 +40,24 @@ window.onload = function() {
 
   initDB();
   initMap();
-  resizeAndDraw();
+
+  var loopCnt = 0;
+  var waitForInitAndDraw = function() {
+    if ((gWaitCounter <= 0) || (loopCnt > 100)) {
+      if (gWaitCounter <= 0)
+        gWaitCounter = 0;
+      else
+        document.getElementById("debug").textContent = "Loading prefs failed.";
+
+      gMapPrefsLoaded = true;
+      resizeAndDraw();
+      setTracking(document.getElementById("trackCheckbox"));
+    }
+    else
+      setTimeout(waitForInitAndDraw, 100);
+    loopCnt++;
+  };
+  waitForInitAndDraw();
 }
 
 window.onresize = function() {

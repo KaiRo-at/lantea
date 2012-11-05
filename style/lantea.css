@@ -75,7 +75,8 @@ h1 {
   border-radius: 3px;
 }
 
-#map {
+#map, #track {
+  position: fixed;
   border: 0;
   top: 0;
   left: 0;
