@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // Get the best-available indexedDB object.
-var iDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
 var mainDB;
 
 var gUIHideCountdown = 0;
@@ -66,7 +66,7 @@ window.onresize = function() {
 
 function initDB() {
   // Open DB.
-  var request = iDB.open("MainDB", 1);
+  var request = window.indexedDB.open("MainDB", 1);
   request.onerror = function(event) {
     // Errors can be handled here. Error codes explain in:
     // https://developer.mozilla.org/en/IndexedDB/IDBDatabaseException#Constants
