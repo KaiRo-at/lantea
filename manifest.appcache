@@ -1,7 +1,6 @@
 CACHE MANIFEST
 
 # 2012-11-06
-index.html
 manifest.webapp
 js/map.js
 js/ui.js
@@ -11,3 +10,6 @@ style/lanteaIcon16.png
 style/lanteaIcon32.png
 style/lanteaIcon64.png
 style/lanteaIcon128.png
+
+NETWORK:
+*
