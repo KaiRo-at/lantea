@@ -297,12 +297,16 @@ function drawMap() {
           var iyMin = gPos.y - ht / 2;
           var ixoff = Math.round((aCoords.x * size - ixMin) / gZoomFactor);
           var iyoff = Math.round((aCoords.y * size - iyMin) / gZoomFactor);
+          // Would be nice to draw directly from the blob, but that crashes:
+          // gMapContext.drawImage(aImage, ixoff, iyoff);
           var URL = window.URL;
           var imgURL = URL.createObjectURL(aImage);
           var imgObj = new Image();
           imgObj.src = imgURL;
-          gMapContext.drawImage(imgObj, ixoff, iyoff);
-          URL.revokeObjectURL(imgURL);
+          imgObj.onload = function() {
+            gMapContext.drawImage(imgObj, ixoff, iyoff);
+            URL.revokeObjectURL(imgURL);
+          }
         }
       });
     }
