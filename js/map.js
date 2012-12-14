@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 var gMapCanvas, gMapContext, gTrackCanvas, gTrackContext, gGeolocation;
-var gDebug = false;
+var gDebug = true;
 
 var gTileSize = 256;
 var gMaxZoom = 18; // The minimum is 0.
@@ -224,21 +224,11 @@ function mod(a, b) {
   return ((a % b) + b) % b;
 }
 
-function normaliseIndices(x, y, z) {
-  var zoomFactor = Math.pow(2, z);
-  return {x: mod(x, zoomFactor),
-          y: mod(y, zoomFactor),
-          z: z};
-}
-
-function tileURL(x, y, z) {
-  var norm = normaliseIndices(x, y, z);
-  return gMapStyles[gActiveMap].url
-         .replace("{x}", norm.x)
-         .replace("{y}", norm.y)
-         .replace("{z}", norm.z)
-         .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)))
-         .replace("[1-4]", 1 + Math.floor(Math.random() * 3));
+function normalizeCoords(aCoords) {
+  var zoomFactor = Math.pow(2, aCoords.z);
+  return {x: mod(aCoords.x, zoomFactor),
+          y: mod(aCoords.y, zoomFactor),
+          z: aCoords.z};
 }
 
 // Returns true if the tile is outside the current view.
@@ -260,7 +250,7 @@ function isOutsideWindow(t) {
 }
 
 function encodeIndex(x, y, z) {
-  var norm = normaliseIndices(x, y, z);
+  var norm = normalizeCoords({x: x, y: y, z: z});
   return norm.x + "," + norm.y + "," + norm.z;
 }
 
@@ -297,32 +287,24 @@ function drawMap() {
       // and the performance sucks (more than expected).
       var xoff = Math.round((x * size - xMin) / gZoomFactor);
       var yoff = Math.round((y * size - yMin) / gZoomFactor);
-      var tileKey = encodeIndex(x, y, gPos.z);
-      if (gTiles[tileKey] && gTiles[tileKey].complete) {
-        gMapContext.drawImage(gTiles[tileKey], xoff, yoff);
-      }
-      else {
-        // Draw placeholder, and then initiate loading/drawing of real one.
-        gMapContext.drawImage(gLoadingTile, xoff, yoff);
-        if (!gTiles[tileKey]) {
-          gTiles[tileKey] = new Image();
-          // Use alt field to communicate info to .onload.
-          gTiles[tileKey].alt = gPos.z + ":" + xoff + ":" + yoff;
-          gTiles[tileKey].src = tileURL(x, y, gPos.z);
-          gTiles[tileKey].onload = function() {
-            var tdata = this.alt.split(":", 3);
-            // Draw the tile if we're still looking at the same zoom.
-            if (tdata[0] == gPos.z) {
-              gMapContext.drawImage(this, tdata[1], tdata[2]);
-            }
-            this.alt = "";
-          }
+      // Draw placeholder, and then initiate loading/drawing of real one.
+      gMapContext.drawImage(gLoadingTile, xoff, yoff);
+
+      gTileService.get(gActiveMap, {x: x, y: y, z: gPos.z}, function(aImage, aStyle, aCoords) {
+        // Only draw if this applies for the current view.
+        if ((aStyle == gActiveMap) && (aCoords.z == gPos.z)) {
+          var ixMin = gPos.x - wid / 2;
+          var iyMin = gPos.y - ht / 2;
+          var ixoff = Math.round((aCoords.x * size - ixMin) / gZoomFactor);
+          var iyoff = Math.round((aCoords.y * size - iyMin) / gZoomFactor);
+          var URL = window.URL;
+          var imgURL = URL.createObjectURL(aImage);
+          var imgObj = new Image();
+          imgObj.src = imgURL;
+          gMapContext.drawImage(imgObj, ixoff, iyoff);
+          URL.revokeObjectURL(imgURL);
         }
-        else {
-          // Update position to draw this image to when loaded.
-          gTiles[tileKey].alt = gPos.z + ":" + xoff + ":" + yoff;
-        }
-      }
+      });
     }
   }
   gLastDrawnPoint = null;
@@ -623,3 +605,91 @@ function clearTrack() {
   gTrackStore.clear();
   drawMap();
 }
+
+var gTileService = {
+  objStore: "tilecache",
+
+  get: function(aStyle, aCoords, aCallback) {
+    var norm = normalizeCoords(aCoords);
+    var dbkey = aStyle + "::" + norm.x + "," + norm.y + "," + norm.z;
+    this.getDBCache(dbkey, function(aResult, aEvent) {
+      if (aResult) {
+        // We did get a cached object.
+        // TODO: Look at the timestamp and trigger a reload when it's too old.
+        aCallback(aResult.image, aStyle, aCoords);
+      }
+      else {
+        // Retrieve image from the web and store it in the cache.
+        var XHR = new XMLHttpRequest();
+        XHR.open("GET",
+                 gMapStyles[aStyle].url
+                   .replace("{x}", norm.x)
+                   .replace("{y}", norm.y)
+                   .replace("{z}", norm.z)
+                   .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)))
+                   .replace("[1-4]", 1 + Math.floor(Math.random() * 3)),
+                 true);
+        XHR.responseType = "blob";
+        XHR.addEventListener("load", function () {
+          if (XHR.status === 200) {
+            var blob = XHR.response;
+            gTileService.setDBCache(dbkey, {image: blob, timestamp: Date.now()});
+            aCallback(blob, aStyle, aCoords);
+          }
+        }, false);
+        XHR.send();
+      }
+    });
+  },
+
+  getDBCache: function(aKey, aCallback) {
+    if (!mainDB)
+      return;
+    var transaction = mainDB.transaction([this.objStore]);
+    var request = transaction.objectStore(this.objStore).get(aKey);
+    request.onsuccess = function(event) {
+      aCallback(request.result, event);
+    };
+    request.onerror = function(event) {
+      // Errors can be handled here.
+      aCallback(undefined, event);
+    };
+  },
+
+  setDBCache: function(aKey, aValue, aCallback) {
+    if (!mainDB)
+      return;
+    var success = false;
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
+    var objStore = transaction.objectStore(this.objStore);
+    var request = objStore.put(aValue, aKey);
+    request.onsuccess = function(event) {
+      success = true;
+      if (aCallback)
+        aCallback(success, event);
+    };
+    request.onerror = function(event) {
+      // Errors can be handled here.
+      if (aCallback)
+        aCallback(success, event);
+    };
+  },
+
+  unsetDBCache: function(aKey, aCallback) {
+    if (!mainDB)
+      return;
+    var success = false;
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
+    var request = transaction.objectStore(this.objStore).delete(aKey);
+    request.onsuccess = function(event) {
+      success = true;
+      if (aCallback)
+        aCallback(success, event);
+    };
+    request.onerror = function(event) {
+      // Errors can be handled here.
+      if (aCallback)
+        aCallback(success, event);
+    }
+  }
+};

@@ -66,7 +66,7 @@ window.onresize = function() {
 
 function initDB() {
   // Open DB.
-  var request = window.indexedDB.open("MainDB", 1);
+  var request = window.indexedDB.open("MainDB", 4);
   request.onerror = function(event) {
     // Errors can be handled here. Error codes explain in:
     // https://developer.mozilla.org/en/IndexedDB/IDBDatabaseException#Constants
@@ -80,10 +80,17 @@ function initDB() {
   request.onupgradeneeded = function(event) {
     mainDB = request.result;
     //document.getElementById("debug").textContent = "mainDB upgraded.";
-    // Create a "prefs" objectStore.
-    var prefsStore = mainDB.createObjectStore("prefs");
-    // Create a "track" objectStore.
-    var trackStore = mainDB.createObjectStore("track", {autoIncrement: true});
+    var ver = mainDB.version || 0; // version is empty string for a new DB
+    if (ver <= 1) {
+      // Create a "prefs" objectStore.
+      var prefsStore = mainDB.createObjectStore("prefs");
+      // Create a "track" objectStore.
+      var trackStore = mainDB.createObjectStore("track", {autoIncrement: true});
+    }
+    if (ver <= 4) {
+      // Create a "tilecache" objectStore.
+      var tilecacheStore = mainDB.createObjectStore("tilecache");
+    }
     mainDB.onversionchange = function(event) {
       mainDB.close();
       mainDB = undefined;
