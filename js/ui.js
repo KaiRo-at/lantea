@@ -47,7 +47,7 @@ window.onload = function() {
       if (gWaitCounter <= 0)
         gWaitCounter = 0;
       else
-        document.getElementById("debug").textContent = "Loading failed (waiting for init).";
+        console.log("Loading failed (waiting for init).");
 
       gMapPrefsLoaded = true;
       resizeAndDraw();
@@ -66,28 +66,30 @@ window.onresize = function() {
 
 function initDB() {
   // Open DB.
-  var request = window.indexedDB.open("MainDB", 4);
+  var request = window.indexedDB.open("MainDB", 2);
   request.onerror = function(event) {
     // Errors can be handled here. Error codes explain in:
     // https://developer.mozilla.org/en/IndexedDB/IDBDatabaseException#Constants
-    //document.getElementById("debug").textContent =
-    //  "error opening mainDB: " + event.target.errorCode;
+    if (gDebug)
+      console.log("error opening mainDB: " + event.target.errorCode);
   };
   request.onsuccess = function(event) {
-    //document.getElementById("debug").textContent = "mainDB opened.";
     mainDB = request.result;
   };
   request.onupgradeneeded = function(event) {
     mainDB = request.result;
-    //document.getElementById("debug").textContent = "mainDB upgraded.";
     var ver = mainDB.version || 0; // version is empty string for a new DB
-    if (ver <= 1) {
+    if (gDebug)
+      console.log("mainDB has version " + ver + ", upgrade needed.");
+    if (!mainDB.objectStoreNames.contains("prefs")) {
       // Create a "prefs" objectStore.
       var prefsStore = mainDB.createObjectStore("prefs");
+    }
+    if (!mainDB.objectStoreNames.contains("track")) {
       // Create a "track" objectStore.
       var trackStore = mainDB.createObjectStore("track", {autoIncrement: true});
     }
-    if (ver <= 4) {
+    if (!mainDB.objectStoreNames.contains("tilecache")) {
       // Create a "tilecache" objectStore.
       var tilecacheStore = mainDB.createObjectStore("tilecache");
     }

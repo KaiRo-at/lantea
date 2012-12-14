@@ -122,7 +122,7 @@ function initMap() {
       gWaitCounter++;
       gTrackStore.getList(function(aTPoints) {
         if (gDebug)
-          document.getElementById("debug").textContent = aTPoints.length + " points loaded.";
+          console.log(aTPoints.length + " points loaded.");
         if (aTPoints.length) {
           gTrack = aTPoints;
         }
@@ -133,7 +133,7 @@ function initMap() {
       setTimeout(getPersistentPrefs, 100);
     loopCnt++;
     if (loopCnt > 50) {
-      document.getElementById("debug").textContent = "Loading prefs failed.";
+      console.log("Loading prefs failed.");
     }
   };
   getPersistentPrefs();
@@ -165,13 +165,14 @@ function initMap() {
 function resizeAndDraw() {
   var viewportWidth = Math.min(window.innerWidth, window.outerWidth);
   var viewportHeight = Math.min(window.innerHeight, window.outerHeight);
-
-  gMapCanvas.width = viewportWidth;
-  gMapCanvas.height = viewportHeight;
-  gTrackCanvas.width = viewportWidth;
-  gTrackCanvas.height = viewportHeight;
-  drawMap();
-  showUI();
+  if (gMapCanvas && gTrackCanvas) {
+    gMapCanvas.width = viewportWidth;
+    gMapCanvas.height = viewportHeight;
+    gTrackCanvas.width = viewportWidth;
+    gTrackCanvas.height = viewportHeight;
+    drawMap();
+    showUI();
+  }
 }
 
 function zoomIn() {
@@ -475,10 +476,9 @@ var mapEvHandler = {
                        y: gPos.y + (x - gMapCanvas.height / 2) * gZoomFactor};
         var gpsCoord = xy2gps(ptCoord.x, ptCoord.y);
         var pt2Coord = gps2xy(gpsCoord.latitude, gpsCoord.longitude);
-        document.getElementById("debug").textContent =
-            ptCoord.x + "/" + ptCoord.y + " - " +
-            gpsCoord.latitude + "/" + gpsCoord.longitude + " - " +
-            pt2Coord.x + "/" + pt2Coord.y;
+        console.log(ptCoord.x + "/" + ptCoord.y + " - " +
+                    gpsCoord.latitude + "/" + gpsCoord.longitude + " - " +
+                    pt2Coord.x + "/" + pt2Coord.y);
         */
 
         var newZoomLevel = gPos.z + (delta > 0 ? 1 : -1);
@@ -591,7 +591,8 @@ function startTracking() {
       function(error) {
         // Ignore erros for the moment, but this is good for debugging.
         // See https://developer.mozilla.org/en/Using_geolocation#Handling_errors
-        document.getElementById("debug").textContent = error.message;
+        if (gDebug)
+          console.log(error.message);
       },
       {enableHighAccuracy: true}
     );
