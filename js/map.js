@@ -56,9 +56,6 @@ var gLastMouseX = 0;
 var gLastMouseY = 0;
 var gZoomFactor;
 
-// Used as an associative array.
-// The keys have to be strings, ours will be "xindex,yindex,zindex" e.g. "13,245,12".
-var gTiles = {};
 var gLoadingTile;
 
 var gMapPrefsLoaded = false;
@@ -175,6 +172,9 @@ function resizeAndDraw() {
   }
 }
 
+// Using scale(x, y) together with drawing old data on scaled canvas would be an improvement for zooming.
+// See https://developer.mozilla.org/en-US/docs/Canvas_tutorial/Transformations#Scaling
+
 function zoomIn() {
   if (gPos.z < gMaxZoom) {
     gPos.z++;
@@ -211,7 +211,6 @@ function setMapStyle() {
   var mapSel = document.getElementById("mapSelector");
   if (mapSel.selectedIndex >= 0 && gActiveMap != mapSel.value) {
     gActiveMap = mapSel.value;
-    gTiles = {};
     document.getElementById("copyright").innerHTML =
         gMapStyles[gActiveMap].copyright;
     showUI();
@@ -260,12 +259,17 @@ function decodeIndex(encodedIdx) {
   return {x: ind[0], y: ind[1], z: ind[2]};
 }
 
-function drawMap() {
-  // Go through all the currently loaded tiles. If we don't want any of them remove them.
-  // for (t in gTiles) {
-  //   if (isOutsideWindow(t))
-  //     delete gTiles[t];
-  // }
+function drawMap(aPixels, aOverdraw) {
+  // aPixels is an object with left/right/top/bottom members telling how many
+  //   pixels on the borders should actually be drawn.
+  // aOverdraw is a bool that tells if we should draw placeholders or draw
+  //   straight over the existing content.
+  if (!aPixels)
+    aPixels = {left: gMapCanvas.width, right: gMapCanvas.width,
+               top: gMapCanvas.height, bottom: gMapCanvas.height};
+  if (!aOverdraw)
+    aOverdraw = false;
+
   document.getElementById("zoomLevel").textContent = gPos.z;
   gZoomFactor = Math.pow(2, gMaxZoom - gPos.z);
   var wid = gMapCanvas.width * gZoomFactor; // Width in level 18 pixels.
@@ -280,36 +284,48 @@ function drawMap() {
   if (gMapPrefsLoaded && mainDB)
     gPrefs.set("position", gPos);
 
-  // Go through all the tiles we want.
-  // If any of them aren't loaded or being loaded, do so.
+  var tiles = {left: Math.ceil((xMin + aPixels.left * gZoomFactor) / size) -
+                               (aPixels.left ? 0 : 1),
+               right: Math.floor((xMax - aPixels.right * gZoomFactor) / size) -
+                                 (aPixels.right ? 1 : 0),
+               top: Math.ceil((yMin + aPixels.top * gZoomFactor) / size) -
+                              (aPixels.top ? 0 : 1),
+               bottom: Math.floor((yMax - aPixels.bottom * gZoomFactor) / size) -
+                                  (aPixels.bottom ? 1 : 0)};
+
+  // Go through all the tiles in the map, find out if to draw them and do so.
   for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
     for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
-      // Round here is **CRUCIAL** otherwise the images are filtered
-      // and the performance sucks (more than expected).
-      var xoff = Math.round((x * size - xMin) / gZoomFactor);
-      var yoff = Math.round((y * size - yMin) / gZoomFactor);
-      // Draw placeholder, and then initiate loading/drawing of real one.
-      gMapContext.drawImage(gLoadingTile, xoff, yoff);
+      // Only go to the drawing step if we need to draw this tile.
+      if (x < tiles.left || x > tiles.right || y < tiles.top || y > tiles.bottom) {
+        // Round here is **CRUCIAL** otherwise the images are filtered
+        // and the performance sucks (more than expected).
+        var xoff = Math.round((x * size - xMin) / gZoomFactor);
+        var yoff = Math.round((y * size - yMin) / gZoomFactor);
+        // Draw placeholder tile unless we overdraw.
+        if (!aOverdraw)
+          gMapContext.drawImage(gLoadingTile, xoff, yoff);
 
-      gTileService.get(gActiveMap, {x: x, y: y, z: gPos.z}, function(aImage, aStyle, aCoords) {
-        // Only draw if this applies for the current view.
-        if ((aStyle == gActiveMap) && (aCoords.z == gPos.z)) {
-          var ixMin = gPos.x - wid / 2;
-          var iyMin = gPos.y - ht / 2;
-          var ixoff = Math.round((aCoords.x * size - ixMin) / gZoomFactor);
-          var iyoff = Math.round((aCoords.y * size - iyMin) / gZoomFactor);
-          // Would be nice to draw directly from the blob, but that crashes:
-          // gMapContext.drawImage(aImage, ixoff, iyoff);
-          var URL = window.URL;
-          var imgURL = URL.createObjectURL(aImage);
-          var imgObj = new Image();
-          imgObj.src = imgURL;
-          imgObj.onload = function() {
-            gMapContext.drawImage(imgObj, ixoff, iyoff);
-            URL.revokeObjectURL(imgURL);
+        // Initiate loading/drawing of the actual tile.
+        gTileService.get(gActiveMap, {x: x, y: y, z: gPos.z},
+                         function(aImage, aStyle, aCoords) {
+          // Only draw if this applies for the current view.
+          if ((aStyle == gActiveMap) && (aCoords.z == gPos.z)) {
+            var ixMin = gPos.x - wid / 2;
+            var iyMin = gPos.y - ht / 2;
+            var ixoff = Math.round((aCoords.x * size - ixMin) / gZoomFactor);
+            var iyoff = Math.round((aCoords.y * size - iyMin) / gZoomFactor);
+            var URL = window.URL;
+            var imgURL = URL.createObjectURL(aImage);
+            var imgObj = new Image();
+            imgObj.src = imgURL;
+            imgObj.onload = function() {
+              gMapContext.drawImage(imgObj, ixoff, iyoff);
+              URL.revokeObjectURL(imgURL);
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
   gLastDrawnPoint = null;
@@ -442,7 +458,13 @@ var mapEvHandler = {
           var dY = y - gLastMouseY;
           gPos.x -= dX * gZoomFactor;
           gPos.y -= dY * gZoomFactor;
-          drawMap();
+          var mapData = gMapContext.getImageData(0, 0, gMapCanvas.width, gMapCanvas.height);
+          gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
+          gMapContext.putImageData(mapData, dX, dY);
+          drawMap({left: (dX > 0) ? dX : 0,
+                   right: (dX < 0) ? -dX : 0,
+                   top: (dY > 0) ? dY : 0,
+                   bottom: (dY < 0) ? -dY : 0});
           showUI();
         }
         gLastMouseX = x;

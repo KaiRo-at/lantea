@@ -85,6 +85,10 @@ h1 {
   z-index: 1;
 }
 
+#map {
+  background: url("style/loading.png") repeat;
+}
+
 #debug {
   position: absolute;
   bottom: 5px;

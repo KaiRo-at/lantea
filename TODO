@@ -2,7 +2,7 @@ Tasks to complete for Lantea Maps:
 
 Required:
 
-* Cache map tiles in the indexedDB
+* Improve tile cache:
 ** Use an intelligent algorithm to automatically try (async) updating tiles if they have a certain age
 *** If they have changed, possibly also try (async) updates of other cached zoom levels covering this area
 ** Clear cached tiles option
@@ -13,7 +13,6 @@ Required:
 * Display location accuracy
 * Show a better visible marker for the current location, possibly also indicating movement direction/speed
 * Support pinch zoom gestures
-* Smoother animations for panning
 * Smooth animations for zooming, probably using some canvas magic
 * Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
 * Save GPX tiles to the web (OSM? Public cloud service? Private service?)
