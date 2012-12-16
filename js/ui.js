@@ -8,8 +8,12 @@ var mainDB;
 
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
+var gAction, gActionLabel;
 
 window.onload = function() {
+  gAction = document.getElementById("action");
+  gActionLabel = document.getElementById("actionlabel");
+
   var mSel = document.getElementById("mapSelector");
   for (var mapStyle in gMapStyles) {
     var opt = document.createElement("option");
@@ -51,6 +55,8 @@ window.onload = function() {
 
       gMapPrefsLoaded = true;
       resizeAndDraw();
+      gActionLabel.textContent = "";
+      gAction.style.display = "none";
       setTracking(document.getElementById("trackCheckbox"));
     }
     else

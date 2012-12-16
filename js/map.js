@@ -35,7 +35,7 @@ var gMapStyles = {
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors (<a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>), tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>.'},
   mapquest_aerial:
     {name: "MapQuest Open Aerial",
-     url: "http://oatile[1-4].mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg",
+     url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg",
      copyright: 'Tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>, portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency.'},
   opengeoserver_arial:
     {name: "OpenGeoServer Aerial",
@@ -297,13 +297,16 @@ function drawMap(aPixels, aOverdraw) {
   for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
     for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
       // Only go to the drawing step if we need to draw this tile.
-      if (x < tiles.left || x > tiles.right || y < tiles.top || y > tiles.bottom) {
+      if (x < tiles.left || x > tiles.right ||
+          y < tiles.top || y > tiles.bottom) {
         // Round here is **CRUCIAL** otherwise the images are filtered
         // and the performance sucks (more than expected).
         var xoff = Math.round((x * size - xMin) / gZoomFactor);
         var yoff = Math.round((y * size - yMin) / gZoomFactor);
         // Draw placeholder tile unless we overdraw.
-        if (!aOverdraw)
+        if (!aOverdraw &&
+            (x < tiles.left -1  || x > tiles.right + 1 ||
+             y < tiles.top -1 || y > tiles.bottom + 1))
           gMapContext.drawImage(gLoadingTile, xoff, yoff);
 
         // Initiate loading/drawing of the actual tile.
@@ -575,8 +578,14 @@ function setTracking(aCheckbox) {
 
 function startTracking() {
   if (gGeolocation) {
+    gActionLabel.textContent = "Establishing Position";
+    gAction.style.display = "block";
     gGeoWatchID = gGeolocation.watchPosition(
       function(position) {
+        if (gActionLabel.textContent) {
+          gActionLabel.textContent = "";
+          gAction.style.display = "none";
+        }
         // Coords spec: https://developer.mozilla.org/en/XPCOM_Interface_Reference/NsIDOMGeoPositionCoords
         var tPoint = {time: position.timestamp,
                       coords: {latitude: position.coords.latitude,
@@ -622,6 +631,10 @@ function startTracking() {
 }
 
 function endTracking() {
+  if (gActionLabel.textContent) {
+    gActionLabel.textContent = "";
+    gAction.style.display = "none";
+  }
   if (gGeoWatchID) {
     gGeolocation.clearWatch(gGeoWatchID);
   }

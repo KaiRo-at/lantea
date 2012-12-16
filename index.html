@@ -6,9 +6,9 @@
 <html manifest="manifest.appcache">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <!-- try to counts default scaling on mobile, see 
+  <!-- try to force a 1:1 scaling on mobile, see
        https://developer.mozilla.org/en/Mobile/Viewport_meta_tag -->
-  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=.6667, maximum-scale=.6667">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1">
   <title>Lantea Maps</title>
   <script src="js/map.js" type="application/javascript;version=1.8"></script>
   <script src="js/ui.js" type="application/javascript;version=1.8"></script>
@@ -59,7 +59,10 @@ Map style:
        onclick="toggleFullscreen();">
 </div>
 
-<p id="debug" class="debugHide"></p>
+<p id="action">
+  <img id="actionimg" src="style/loading_action.png">
+  <span id="actionlabel">Loading</span>&hellip;
+</p>
 <p id="copyright" class="overlayArea"></p>
 
 <canvas id="map" width="500" height="500">

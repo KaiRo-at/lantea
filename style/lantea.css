@@ -5,6 +5,7 @@
 body {
   font-family: sans-serif;
   margin: 0;
+  background: url("loading.png") repeat;
 }
 
 h1 {
@@ -85,11 +86,7 @@ h1 {
   z-index: 1;
 }
 
-#map {
-  background: url("style/loading.png") repeat;
-}
-
-#debug {
+#action {
   position: absolute;
   bottom: 5px;
   left: .5em;
@@ -98,6 +95,10 @@ h1 {
   background-color: rgba(255, 255, 255, .8);
   border-radius: 3px;
   padding: 0 3px;
+}
+
+#actionimg {
+  vertical-align: text-bottom;
 }
 
 .debugHide {
