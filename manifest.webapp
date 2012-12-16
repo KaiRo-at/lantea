@@ -2,6 +2,15 @@
   "name": "Lantea Maps",
   "description": "Display maps and record (GPS) tracks of your location.",
   "launch_path": "/index.html",
+  "appcache_path": "/manifest.appcache",
+  "permissions": {
+    "storage": {
+      "description": "Required for saving settings, tracks, and the tile cache.",
+    },
+    "geolocation": {
+      "description": "Required record tracks."
+    }
+  },
   "developer": {
     "name": "Robert Kaiser",
     "url": "http://www.kairo.at/"
