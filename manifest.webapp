@@ -5,7 +5,7 @@
   "appcache_path": "/manifest.appcache",
   "permissions": {
     "storage": {
-      "description": "Required for saving settings, tracks, and the tile cache.",
+      "description": "Required for saving settings, tracks, and the tile cache."
     },
     "geolocation": {
       "description": "Required record tracks."
