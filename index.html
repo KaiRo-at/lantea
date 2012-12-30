@@ -41,7 +41,9 @@
 Map style:
 <select id="mapSelector" onchange="setMapStyle();">
 <!-- option value="osm_mapnik">OpenStreetMap (Mapnik)</option -->
-</select>
+</select><br/>
+<input type="button" id="clearCacheButton" value="Clear Cached Maps"
+       onclick="gTileService.clearDB();">
 </fieldset>
 </div>
 

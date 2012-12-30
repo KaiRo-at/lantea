@@ -649,36 +649,40 @@ function clearTrack() {
 var gTileService = {
   objStore: "tilecache",
 
+  ageLimit: 14 * 86400, // 2 weeks
+
   get: function(aStyle, aCoords, aCallback) {
     var norm = normalizeCoords(aCoords);
     var dbkey = aStyle + "::" + norm.x + "," + norm.y + "," + norm.z;
     this.getDBCache(dbkey, function(aResult, aEvent) {
       if (aResult) {
         // We did get a cached object.
-        // TODO: Look at the timestamp and trigger a reload when it's too old.
         aCallback(aResult.image, aStyle, aCoords);
+        // Look at the timestamp and return if it's not too old.
+        if (aResult.timestamp + this.ageLimit > Date.now())
+          return;
+        // Reload cached tile otherwise.
+        console.log("reload cached tile: " + dbkey);
       }
-      else {
-        // Retrieve image from the web and store it in the cache.
-        var XHR = new XMLHttpRequest();
-        XHR.open("GET",
-                 gMapStyles[aStyle].url
-                   .replace("{x}", norm.x)
-                   .replace("{y}", norm.y)
-                   .replace("{z}", norm.z)
-                   .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)))
-                   .replace("[1-4]", 1 + Math.floor(Math.random() * 3)),
-                 true);
-        XHR.responseType = "blob";
-        XHR.addEventListener("load", function () {
-          if (XHR.status === 200) {
-            var blob = XHR.response;
-            gTileService.setDBCache(dbkey, {image: blob, timestamp: Date.now()});
-            aCallback(blob, aStyle, aCoords);
-          }
-        }, false);
-        XHR.send();
-      }
+      // Retrieve image from the web and store it in the cache.
+      var XHR = new XMLHttpRequest();
+      XHR.open("GET",
+                gMapStyles[aStyle].url
+                  .replace("{x}", norm.x)
+                  .replace("{y}", norm.y)
+                  .replace("{z}", norm.z)
+                  .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)))
+                  .replace("[1-4]", 1 + Math.floor(Math.random() * 3)),
+                true);
+      XHR.responseType = "blob";
+      XHR.addEventListener("load", function () {
+        if (XHR.status === 200) {
+          var blob = XHR.response;
+          gTileService.setDBCache(dbkey, {image: blob, timestamp: Date.now()});
+          aCallback(blob, aStyle, aCoords);
+        }
+      }, false);
+      XHR.send();
     });
   },
 
@@ -721,6 +725,24 @@ var gTileService = {
     var success = false;
     var transaction = mainDB.transaction([this.objStore], "readwrite");
     var request = transaction.objectStore(this.objStore).delete(aKey);
+    request.onsuccess = function(event) {
+      success = true;
+      if (aCallback)
+        aCallback(success, event);
+    };
+    request.onerror = function(event) {
+      // Errors can be handled here.
+      if (aCallback)
+        aCallback(success, event);
+    }
+  },
+
+  clearDB: function(aCallback) {
+    if (!mainDB)
+      return;
+    var success = false;
+    var transaction = mainDB.transaction([this.objStore], "readwrite");
+    var request = transaction.objectStore(this.objStore).clear();
     request.onsuccess = function(event) {
       success = true;
       if (aCallback)

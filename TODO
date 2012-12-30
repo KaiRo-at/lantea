@@ -3,10 +3,8 @@ Tasks to complete for Lantea Maps:
 Required:
 
 * Improve tile cache:
-** Use an intelligent algorithm to automatically try (async) updating tiles if they have a certain age
-*** If they have changed, possibly also try (async) updates of other cached zoom levels covering this area
-** Clear cached tiles option
-** Pre-cache tiles in adjecent areas and possibly zoom levels
+** If cached tiles have changed, possibly also try (async) updates of other cached zoom levels covering this area
+** Pre-cache tiles in adjacent areas and possibly zoom levels
 * Show a notification when we are loading tiles or saved data
 * Display length and duration of track
 * Display movement speed
