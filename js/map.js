@@ -678,8 +678,8 @@ var gTileService = {
       XHR.addEventListener("load", function () {
         if (XHR.status === 200) {
           var blob = XHR.response;
-          gTileService.setDBCache(dbkey, {image: blob, timestamp: Date.now()});
           aCallback(blob, aStyle, aCoords);
+          gTileService.setDBCache(dbkey, {image: blob, timestamp: Date.now()});
         }
       }, false);
       XHR.send();
