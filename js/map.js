@@ -649,7 +649,7 @@ function clearTrack() {
 var gTileService = {
   objStore: "tilecache",
 
-  ageLimit: 14 * 86400, // 2 weeks
+  ageLimit: 14 * 86400 * 1000, // 2 weeks (in ms)
 
   get: function(aStyle, aCoords, aCallback) {
     var norm = normalizeCoords(aCoords);
@@ -659,10 +659,11 @@ var gTileService = {
         // We did get a cached object.
         aCallback(aResult.image, aStyle, aCoords);
         // Look at the timestamp and return if it's not too old.
-        if (aResult.timestamp + this.ageLimit > Date.now())
+        if (aResult.timestamp + gTileService.ageLimit > Date.now())
           return;
         // Reload cached tile otherwise.
-        console.log("reload cached tile: " + dbkey);
+        var oldDate = new Date(aResult.timestamp);
+        console.log("reload cached tile: " + dbkey + " - " + oldDate.toUTCString());
       }
       // Retrieve image from the web and store it in the cache.
       var XHR = new XMLHttpRequest();
