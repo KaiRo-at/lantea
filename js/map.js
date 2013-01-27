@@ -146,9 +146,7 @@ function initMap() {
   gTrackCanvas.addEventListener("touchcancel", mapEvHandler, false);
   gTrackCanvas.addEventListener("touchleave", mapEvHandler, false);
 
-  // XXX deprecated? see https://groups.google.com/forum/?fromgroups#!topic/mozilla.dev.planning/kuhrORubaRY[1-25]
-  gTrackCanvas.addEventListener("DOMMouseScroll", mapEvHandler, false);
-  gTrackCanvas.addEventListener("mousewheel", mapEvHandler, false);
+  gTrackCanvas.addEventListener("wheel", mapEvHandler, false);
 
   document.getElementById("copyright").innerHTML =
       gMapStyles[gActiveMap].copyright;
@@ -483,17 +481,13 @@ var mapEvHandler = {
       case "touchleave":
         //gDragging = false;
         break;
-      case "DOMMouseScroll":
-      case "mousewheel":
-        var delta = 0;
-        if (aEvent.wheelDelta) {
-          delta = aEvent.wheelDelta / 120;
-          if (window.opera)
-            delta = -delta;
-        }
-        else if (aEvent.detail) {
-          delta = -aEvent.detail / 3;
-        }
+      case "wheel":
+        // If we'd want pixels, we'd need to calc up using aEvent.deltaMode.
+        // See https://developer.mozilla.org/en-US/docs/Mozilla_event_reference/wheel
+
+        // Only accept (non-null) deltaY values
+        if (!aEvent.deltaY)
+          break;
 
         // Debug output: "coordinates" of the point the mouse was over.
         /*
@@ -506,7 +500,7 @@ var mapEvHandler = {
                     pt2Coord.x + "/" + pt2Coord.y);
         */
 
-        var newZoomLevel = gPos.z + (delta > 0 ? 1 : -1);
+        var newZoomLevel = gPos.z + (aEvent.deltaY < 0 ? 1 : -1);
         if ((newZoomLevel >= 0) && (newZoomLevel <= gMaxZoom)) {
           // Calculate new center of the map - same point stays under the mouse.
           // This means that the pixel distance between the old center and point
@@ -519,9 +513,9 @@ var mapEvHandler = {
           gPos.x -= (x - gMapCanvas.width / 2) * (newZoomFactor - gZoomFactor);
           gPos.y -= (y - gMapCanvas.height / 2) * (newZoomFactor - gZoomFactor);
 
-          if (delta > 0)
+          if (aEvent.deltaY < 0)
             zoomIn();
-          else if (delta < 0)
+          else
             zoomOut();
         }
         break;
