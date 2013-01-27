@@ -459,13 +459,20 @@ var mapEvHandler = {
           var dY = y - gLastMouseY;
           gPos.x -= dX * gZoomFactor;
           gPos.y -= dY * gZoomFactor;
-          var mapData = gMapContext.getImageData(0, 0, gMapCanvas.width, gMapCanvas.height);
-          gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
-          gMapContext.putImageData(mapData, dX, dY);
-          drawMap({left: (dX > 0) ? dX : 0,
-                   right: (dX < 0) ? -dX : 0,
-                   top: (dY > 0) ? dY : 0,
-                   bottom: (dY < 0) ? -dY : 0});
+          if (true) { // use optimized path
+            var mapData = gMapContext.getImageData(0, 0,
+                                                   gMapCanvas.width,
+                                                   gMapCanvas.height);
+            gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
+            gMapContext.putImageData(mapData, dX, dY);
+            drawMap({left: (dX > 0) ? dX : 0,
+                     right: (dX < 0) ? -dX : 0,
+                     top: (dY > 0) ? dY : 0,
+                     bottom: (dY < 0) ? -dY : 0});
+          }
+          else {
+            drawMap(false, true);
+          }
           showUI();
         }
         gLastMouseX = x;
