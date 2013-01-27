@@ -637,7 +637,7 @@ function endTracking() {
 function clearTrack() {
   gTrack = [];
   gTrackStore.clear();
-  drawMap();
+  drawMap({left: 0, right: 0, top: 0, bottom: 0});
 }
 
 var gTileService = {
