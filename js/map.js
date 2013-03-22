@@ -148,6 +148,8 @@ function initMap() {
 
   gTrackCanvas.addEventListener("wheel", mapEvHandler, false);
 
+  document.getElementById("body").addEventListener("keydown", mapEvHandler, false);
+
   document.getElementById("copyright").innerHTML =
       gMapStyles[gActiveMap].copyright;
 
@@ -183,6 +185,14 @@ function zoomIn() {
 function zoomOut() {
   if (gPos.z > 0) {
     gPos.z--;
+    drawMap();
+  }
+}
+
+function zoomTo(aTargetLevel) {
+  aTargetLevel = parseInt(aTargetLevel);
+  if (aTargetLevel >= 0 && aTargetLevel <= gMaxZoom) {
+    gPos.z = aTargetLevel;
     drawMap();
   }
 }
@@ -417,8 +427,8 @@ var mapEvHandler = {
   handleEvent: function(aEvent) {
     var touchEvent = aEvent.type.indexOf('touch') != -1;
 
-    // Bail out on unwanted map moves, but not zoom-changing events.
-    if (aEvent.type != "DOMMouseScroll" && aEvent.type != "mousewheel") {
+    // Bail out on unwanted map moves, but not zoom or keyboard events.
+    if (aEvent.type.indexOf("mouse") === 0 || aEvent.type.indexOf("touch") === 0) {
       // Bail out if this is neither a touch nor left-click.
       if (!touchEvent && aEvent.button != 0)
         return;
@@ -524,6 +534,88 @@ var mapEvHandler = {
             zoomIn();
           else
             zoomOut();
+        }
+        break;
+      case "keydown":
+        // Allow keyboard control to move and zoom the map.
+        // Should use aEvent.key instead of aEvent.which but needs bug 680830.
+        // See https://developer.mozilla.org/en-US/docs/DOM/Mozilla_event_reference/keydown
+        var dX = 0;
+        var dY = 0;
+        switch (aEvent.which) {
+          case 39: // right
+            dX = -gTileSize / 2;
+          break;
+          case 37: // left
+            dX = gTileSize / 2;
+          break;
+          case 38: // up
+            dY = gTileSize / 2;
+          break;
+          case 40: // down
+            dY = -gTileSize / 2;
+          break;
+          case 87: // w
+          case 107: // + (numpad)
+          case 171: // + (normal key)
+            zoomIn();
+          break;
+          case 83: // s
+          case 109: // - (numpad)
+          case 173: // - (normal key)
+            zoomOut();
+          break;
+          case 48: // 0
+          case 49: // 1
+          case 50: // 2
+          case 51: // 3
+          case 52: // 4
+          case 53: // 5
+          case 54: // 6
+          case 55: // 7
+          case 56: // 8
+            zoomTo(aEvent.which - 38);
+          break;
+          case 57: // 9
+            zoomTo(9);
+          break;
+          case 96: // 0 (numpad)
+          case 97: // 1 (numpad)
+          case 98: // 2 (numpad)
+          case 99: // 3 (numpad)
+          case 100: // 4 (numpad)
+          case 101: // 5 (numpad)
+          case 102: // 6 (numpad)
+          case 103: // 7 (numpad)
+          case 104: // 8 (numpad)
+            zoomTo(aEvent.which - 86);
+          break;
+          case 105: // 9 (numpad)
+            zoomTo(9);
+          break;
+          default: // not supported
+            console.log("key not supported: " + aEvent.which);
+          break;
+        }
+
+        // Move if needed.
+        if (dX || dY) {
+          gPos.x -= dX * gZoomFactor;
+          gPos.y -= dY * gZoomFactor;
+          if (true) { // use optimized path
+            var mapData = gMapContext.getImageData(0, 0,
+                                                   gMapCanvas.width,
+                                                   gMapCanvas.height);
+            gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
+            gMapContext.putImageData(mapData, dX, dY);
+            drawMap({left: (dX > 0) ? dX : 0,
+                     right: (dX < 0) ? -dX : 0,
+                     top: (dY > 0) ? dY : 0,
+                     bottom: (dY < 0) ? -dY : 0});
+          }
+          else {
+            drawMap(false, true);
+          }
         }
         break;
     }

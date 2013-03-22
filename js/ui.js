@@ -36,6 +36,8 @@ window.onload = function() {
     areas[i].addEventListener("touchleave", uiEvHandler, false);
   }
 
+  document.getElementById("body").addEventListener("keydown", uiEvHandler, false);
+
   if (navigator.platform.length == "") {
     // For Firefox OS, don't display the "save" button.
     // Do this by setting the debugHide class for testing in debug mode.
@@ -72,7 +74,7 @@ window.onresize = function() {
 
 function initDB() {
   // Open DB.
-  var request = window.indexedDB.open("MainDB", 2);
+  var request = window.indexedDB.open("MainDB-lantea", 2);
   request.onerror = function(event) {
     // Errors can be handled here. Error codes explain in:
     // https://developer.mozilla.org/en/IndexedDB/IDBDatabaseException#Constants
@@ -188,6 +190,7 @@ var uiEvHandler = {
       case "touchmove":
       case "mouseup":
       case "touchend":
+      case "keydown":
         showUI();
         break;
     }
