@@ -12,31 +12,9 @@ h1 {
   display: none;
 }
 
-#menuArea {
-  position: absolute;
-  /* width: 30em; */
-  left: 1%;
-  top: 1em;
-  z-index: 5;
-}
-
-#zoomArea {
-  position: absolute;
-  right: 1%;
-  top: 1em;
-  z-index: 5;
-  text-align: center;
-}
-
-#fullscreenArea {
-  position: absolute;
-  right: 1%;
-  bottom: 2em;
-  z-index: 5;
-  text-align: center;
-}
-
 .overlayArea {
+  position: absolute;
+  z-index: 5;
   transition-property: opacity;
   transition-duration: .2s;
 }
@@ -53,6 +31,24 @@ h1 {
 .overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
 .overlayArea select:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
+}
+
+#menuArea {
+  /* width: 30em; */
+  left: 1%;
+  top: 1em;
+}
+
+#zoomArea {
+  right: 1%;
+  top: 1em;
+  text-align: center;
+}
+
+#fullscreenArea {
+  right: 1%;
+  bottom: 2em;
+  text-align: center;
 }
 
 #zoomLevel {
@@ -105,8 +101,12 @@ h1 {
   display: none;
 }
 
+.settingsSubTitle {
+  margin: .5em 0 0;
+  font-weight: bold;
+}
+
 #copyright {
-  position: absolute;
   bottom: 5px;
   right: .5em;
   margin: 0;

@@ -9,6 +9,7 @@ var mainDB;
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gAction, gActionLabel;
+var gOSMAPIURL = "http://api06.dev.openstreetmap.org/"; // "http://api.openstreetmap.org/";
 
 window.onload = function() {
   gAction = document.getElementById("action");
@@ -60,6 +61,17 @@ window.onload = function() {
       gActionLabel.textContent = "";
       gAction.style.display = "none";
       setTracking(document.getElementById("trackCheckbox"));
+      gPrefs.get("osm_user", function(aValue) {
+        if (aValue) {
+          document.getElementById("uploadUser").value = aValue;
+          document.getElementById("uploadTrackButton").disabled = false;
+        }
+      });
+      gPrefs.get("osm_pwd", function(aValue) {
+        var upwd = document.getElementById("uploadPwd");
+        if (aValue)
+          document.getElementById("uploadPwd").value = aValue;
+      });
     }
     else
       setTimeout(waitForInitAndDraw, 100);
@@ -197,6 +209,18 @@ var uiEvHandler = {
   }
 };
 
+function setUploadField(aField) {
+  switch (aField.id) {
+    case "uploadUser":
+      gPrefs.set("osm_user", aField.value);
+      document.getElementById("uploadTrackButton").disabled = !aField.value.length;
+      break;
+    case "uploadPwd":
+      gPrefs.set("osm_pwd", aField.value);
+      break;
+  }
+}
+
 function makeISOString(aTimestamp) {
   // ISO time format is YYYY-MM-DDTHH:mm:ssZ
   var tsDate = new Date(aTimestamp);
@@ -208,39 +232,94 @@ function makeISOString(aTimestamp) {
          (tsDate.getUTCSeconds() < 10 ? "0" : "") + tsDate.getUTCSeconds() + "Z";
 }
 
+function convertTrack(aTargetFormat) {
+  var out = "";
+  switch (aTargetFormat) {
+    case "gpx":
+      out += '<?xml version="1.0" encoding="UTF-8" ?>' + "\n\n";
+      out += '<gpx version="1.0" creator="Lantea" xmlns="http://www.topografix.com/GPX/1/0">' + "\n";
+      if (gTrack.length) {
+        out += '  <trk>' + "\n";
+        out += '    <trkseg>' + "\n";
+        for (var i = 0; i < gTrack.length; i++) {
+          if (gTrack[i].beginSegment && i > 0) {
+            out += '    </trkseg>' + "\n";
+            out += '    <trkseg>' + "\n";
+          }
+          out += '      <trkpt lat="' + gTrack[i].coords.latitude + '" lon="' +
+                                        gTrack[i].coords.longitude + '">' + "\n";
+          if (gTrack[i].coords.altitude) {
+            out += '        <ele>' + gTrack[i].coords.altitude + '</ele>' + "\n";
+          }
+          out += '        <time>' + makeISOString(gTrack[i].time) + '</time>' + "\n";
+          out += '      </trkpt>' + "\n";
+        }
+        out += '    </trkseg>' + "\n";
+        out += '  </trk>' + "\n";
+      }
+      out += '</gpx>' + "\n";
+      break;
+    case "json":
+      out = JSON.stringify(gTrack);
+      break;
+    default:
+      break;
+  }
+  return out;
+}
+
 function saveTrack() {
   if (gTrack.length) {
-    var out = '<?xml version="1.0" encoding="UTF-8" ?>' + "\n\n";
-    out += '<gpx version="1.0" creator="Lantea" xmlns="http://www.topografix.com/GPX/1/0">' + "\n";
-    out += '  <trk>' + "\n";
-    out += '    <trkseg>' + "\n";
-    for (var i = 0; i < gTrack.length; i++) {
-      if (gTrack[i].beginSegment && i > 0) {
-        out += '    </trkseg>' + "\n";
-        out += '    <trkseg>' + "\n";
-      }
-      out += '      <trkpt lat="' + gTrack[i].coords.latitude + '" lon="' +
-                                    gTrack[i].coords.longitude + '">' + "\n";
-      if (gTrack[i].coords.altitude) {
-        out += '        <ele>' + gTrack[i].coords.altitude + '</ele>' + "\n";
-      }
-      out += '        <time>' + makeISOString(gTrack[i].time) + '</time>' + "\n";
-      out += '      </trkpt>' + "\n";
-    }
-    out += '    </trkseg>' + "\n";
-    out += '  </trk>' + "\n";
-    out += '</gpx>' + "\n";
-    var outDataURI = "data:application/gpx+xml," + encodeURIComponent(out);
+    var outDataURI = "data:application/gpx+xml," +
+                     encodeURIComponent(convertTrack("gpx"));
     window.open(outDataURI, 'GPX Track');
   }
 }
 
 function saveTrackDump() {
   if (gTrack.length) {
-    var out = JSON.stringify(gTrack);
-    var outDataURI = "data:application/json," + encodeURIComponent(out);
+    var outDataURI = "data:application/json," +
+                     encodeURIComponent(convertTrack("json"));
     window.open(outDataURI, 'JSON dump');
   }
+}
+
+function uploadTrack() {
+  // See http://wiki.openstreetmap.org/wiki/Api06#Uploading_traces
+  var trackBlob = new Blob([convertTrack("gpx")], { "type" : "application/gpx+xml" });
+  var formData = new FormData();
+  formData.append("file", trackBlob);
+  formData.append("description", "Track recorded via Lantea Maps");
+  //formData.append("tags", "");
+  formData.append("visibility", "private");
+  var XHR = new XMLHttpRequest();
+  XHR.onreadystatechange = function() {
+    if (XHR.readyState == 4) {/*
+      gLog.appendChild(document.createElement("li"))
+          .appendChild(document.createTextNode(aURL + " - " + XHR.status +
+                                               " " + XHR.statusText));*/
+    }
+    if (XHR.readyState == 4 && XHR.status == 200) {
+      // so far so good
+      reportUploadStatus(true);
+    } else if (XHR.readyState == 4 && XHR.status != 200) {
+      // fetched the wrong page or network error...
+      reportUploadStatus(false);
+    }
+  };
+  XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true,
+           document.getElementById("uploadUser").value,
+           document.getElementById("uploadPwd").value);
+  try {
+    XHR.send(formData);
+  }
+  catch (e) {
+    reportUploadStatus(false, e);
+  }
+}
+
+function reportUploadStatus(aSuccess, aMessage) {
+  alert(aMessage ? aMessage : (aSuccess ? "success" : "failure"));
 }
 
 var gPrefs = {

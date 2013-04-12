@@ -427,6 +427,10 @@ var mapEvHandler = {
   handleEvent: function(aEvent) {
     var touchEvent = aEvent.type.indexOf('touch') != -1;
 
+    // Bail out if the event is happening on an input.
+    if (aEvent.target.tagName.toLowerCase() == "input")
+      return;
+
     // Bail out on unwanted map moves, but not zoom or keyboard events.
     if (aEvent.type.indexOf("mouse") === 0 || aEvent.type.indexOf("touch") === 0) {
       // Bail out if this is neither a touch nor left-click.
