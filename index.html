@@ -27,7 +27,7 @@
 <input type="button" id="dumpTrackButton" value="Dump"
        onclick="saveTrackDump();" class="debugHide">
 <input type="button" id="uploadTrackButton" value="Upload" disabled="true"
-       onclick="uploadTrack();" class="debugHide">
+       onclick="showUploadDialog();">
 <input type="button" id="clearTrackButton" value="Clear"
        onclick="clearTrack();"><br/>
 <input type="checkbox" id="trackCheckbox"
@@ -40,7 +40,7 @@
 <input type="button" id="settingsButton" value="Settings"
        onclick="toggleSettings();"><br/>
 <fieldset id="settingsArea"><legend>Settings</legend>
-Map style:
+<label for="mapSelector">Map style:</label>
 <select id="mapSelector" onchange="setMapStyle();">
 <!-- option value="osm_mapnik">OpenStreetMap (Mapnik)</option -->
 </select>
@@ -71,6 +71,37 @@ Map style:
 <!-- other possible characters: &#x25F0; -->
 <input type="button" id="fullscreenButton" value="&#x25A3;"
        onclick="toggleFullscreen();">
+</div>
+
+<div id="dialogArea" class="hidden">
+<div id="uploadDialog">
+<p class="dialogTitle">Upload Track to OpenStreetMap:</p>
+<label for="uploadVisibility">Visibility:</label>
+<select id="uploadVisibility">
+<option value="identifiable">Identifiable</option>
+<option value="private">Private</option>
+</select><br>
+<label for="uploadDesc">Description:</label>
+<input type="text" id="uploadDesc" maxlength="255" size="25"
+       value="Lantea Maps">
+<p class="dialogHelp">You will be asked for your OSM user name and password
+  when clicking "Upload Track".</p>
+<input type="button" id="uploadDialogUploadButton" value="Upload Track"
+       onclick="uploadTrack();">
+<input type="button" id="uploadDialogCancelButton" value="Cancel"
+       onclick="cancelDialog();">
+</div>
+<div id="uploadStatus">
+<p class="dialogTitle">Track Upload to OpenStreetMap</p>
+<p id="uploadInProgress"><img id="actionimg" src="style/loading_action.png">
+  Upload in progress&hellip;</p>
+<p id="uploadSuccess" style="display:none;">Track upload successful!</p>
+<p id="uploadFailed" style="display:none;">Track upload failed.</p>
+<p id="uploadError" style="display:none;">Error:<br>
+  <span id="uploadErrorMsg"></span></p>
+<input type="button" id="uploadStatusCloseButton" value="Close"
+       onclick="cancelDialog();" disabled="true">
+</div>
 </div>
 
 <p id="action">

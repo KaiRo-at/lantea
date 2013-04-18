@@ -43,15 +43,15 @@ window.onload = function() {
     // For Firefox OS, don't display the "save" button.
     // Do this by setting the debugHide class for testing in debug mode.
     document.getElementById("saveTrackButton").classList.add("debugHide");
-    // For now, only show the upload UI on Firefox OS.
-    document.getElementById("uploadTrackButton").classList.remove("debugHide");
-    // Without OAuth, the login data is useless
-    //document.getElementById("uploadSettingsArea").classList.remove("debugHide");
-    // As login data is useless for now, always enable upload button
-    document.getElementById("uploadTrackButton").disabled = false;
   }
 
+  // Without OAuth, the login data is useless
+  //document.getElementById("uploadSettingsArea").classList.remove("debugHide");
+  // As login data is useless for now, always enable upload button
+  document.getElementById("uploadTrackButton").disabled = false;
+
   if (gDebug) {
+    // Note that GPX upload returns an error 500 on the dev API right now.
     gOSMAPIURL = "http://api06.dev.openstreetmap.org/";
   }
 
@@ -201,6 +201,22 @@ function toggleFullscreen() {
   }
 }
 
+function showUploadDialog() {
+  var dia = document.getElementById("dialogArea");
+  var areas = dia.children;
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].style.display = "none";
+  }
+  document.getElementById("uploadDialog").style.display = "block";
+  document.getElementById("uploadTrackButton").disabled = true;
+  dia.classList.remove("hidden");
+}
+
+function cancelDialog() {
+  document.getElementById("dialogArea").classList.add("hidden");
+  document.getElementById("uploadTrackButton").disabled = false;
+}
+
 var uiEvHandler = {
   handleEvent: function(aEvent) {
     var touchEvent = aEvent.type.indexOf('touch') != -1;
@@ -295,13 +311,24 @@ function saveTrackDump() {
 }
 
 function uploadTrack() {
+  var dia = document.getElementById("dialogArea");
+  var areas = dia.children;
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].style.display = "none";
+  }
+  document.getElementById("uploadStatus").style.display = "block";
+
   // See http://wiki.openstreetmap.org/wiki/Api06#Uploading_traces
-  var trackBlob = new Blob([convertTrack("gpx")], { "type" : "application/gpx+xml" });
+  var trackBlob = new Blob([convertTrack("gpx")],
+                           { "type" : "application/gpx+xml" });
   var formData = new FormData();
   formData.append("file", trackBlob);
-  formData.append("description", "Track recorded via Lantea Maps");
+  var desc = document.getElementById("uploadDesc").value;
+  formData.append("description",
+                  desc.length ? desc : "Track recorded via Lantea Maps");
   //formData.append("tags", "");
-  formData.append("visibility", "private");
+  formData.append("visibility",
+                  document.getElementById("uploadVisibility").value);
   var XHR = new XMLHttpRequest();
   XHR.onreadystatechange = function() {
     if (XHR.readyState == 4 && XHR.status == 200) {
@@ -313,8 +340,8 @@ function uploadTrack() {
     }
   };
   XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
-  // Cross-Origin XHR doesn't allow username/password (HTTP Auth), so need to look into OAuth.
-  // But for now, we'll ask the user for entering credentials with this.
+  // Cross-Origin XHR doesn't allow username/password (HTTP Auth).
+  // So, we'll ask the user for entering credentials with rather ugly UI.
   XHR.withCredentials = true;
   try {
     XHR.send(formData);
@@ -325,7 +352,18 @@ function uploadTrack() {
 }
 
 function reportUploadStatus(aSuccess, aMessage) {
-  alert(aMessage ? aMessage : (aSuccess ? "success" : "failure"));
+  document.getElementById("uploadStatusCloseButton").disabled = false;
+  document.getElementById("uploadInProgress").style.display = "none";
+  if (aSuccess) {
+    document.getElementById("uploadSuccess").style.display = "block";
+  }
+  else if (aMessage) {
+    document.getElementById("uploadErrorMsg").textContent = aMessage;
+    document.getElementById("uploadError").style.display = "block";
+  }
+  else {
+    document.getElementById("uploadFailed").style.display = "block";
+  }
 }
 
 var gPrefs = {

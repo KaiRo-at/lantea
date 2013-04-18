@@ -12,6 +12,7 @@ h1 {
   display: none;
 }
 
+#dialogArea,
 .overlayArea {
   position: absolute;
   z-index: 5;
@@ -19,15 +20,20 @@ h1 {
   transition-duration: .2s;
 }
 
+#dialogArea.hidden,
 .overlayArea.hidden {
   opacity: 0;
   transition-duration: 1s;
 }
 
+#dialogArea:-moz-system-metric(touch-enabled),
 .overlayArea:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
 }
 
+#dialogArea input[type="button"]:-moz-system-metric(touch-enabled),
+#dialogArea input[type="text"]:-moz-system-metric(touch-enabled),
+#dialogArea select:-moz-system-metric(touch-enabled),
 .overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
 .overlayArea select:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
@@ -120,6 +126,35 @@ h1 {
 
 #copyright.hidden {
   opacity: 0;
+}
+
+#dialogArea {
+  top: 20%;
+  right: 0;
+  left: 0;
+  width: 30ch;
+  max-width: 92%;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, .8);
+  border: 0;
+  margin: auto;
+  padding: .5em;
+  border-radius: 5px;
+}
+
+#dialogArea.hidden {
+  top: -100%;
+}
+
+.dialogTitle {
+  margin: 0 0 .5em;
+  font-weight: bold;
+}
+
+.dialogHelp {
+  margin: .5em 0;
+  font-size: small;
+  opacity: .66;
 }
 
 @media screen and (max-width: 500px) {
