@@ -47,6 +47,8 @@ window.onload = function() {
     document.getElementById("uploadTrackButton").classList.remove("debugHide");
     // Without OAuth, the login data is useless
     //document.getElementById("uploadSettingsArea").classList.remove("debugHide");
+    // As login data is useless for now, always enable upload button
+    document.getElementById("uploadTrackButton").disabled = true;
   }
 
   if (gDebug) {
