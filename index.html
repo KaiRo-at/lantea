@@ -27,7 +27,7 @@
 <input type="button" id="dumpTrackButton" value="Dump"
        onclick="saveTrackDump();" class="debugHide">
 <input type="button" id="uploadTrackButton" value="Upload" disabled="true"
-       onclick="uploadTrack();">
+       onclick="uploadTrack();" class="debugHide">
 <input type="button" id="clearTrackButton" value="Clear"
        onclick="clearTrack();"><br/>
 <input type="checkbox" id="trackCheckbox"
@@ -47,6 +47,7 @@ Map style:
 <br/>
 <input type="button" id="clearCacheButton" value="Clear Cached Maps"
        onclick="gTileService.clearDB();">
+<div id="uploadSettingsArea" class="debugHide">
 <p class="settingsSubTitle">OpenStreetMap Track Upload:</p>
 <label for="uploadUser">User name:</label>
 <input type="text" id="uploadUser" maxlength="255"
@@ -54,6 +55,7 @@ Map style:
 <label for="uploadPwd">Password:</label>
 <input type="password" id="uploadPwd" maxlength="255"
        onchange="setUploadField(this);">
+</div>
 </fieldset>
 </div>
 

@@ -9,7 +9,7 @@ var mainDB;
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gAction, gActionLabel;
-var gOSMAPIURL = "http://api06.dev.openstreetmap.org/"; // "http://api.openstreetmap.org/";
+var gOSMAPIURL = "http://api.openstreetmap.org/";
 
 window.onload = function() {
   gAction = document.getElementById("action");
@@ -43,6 +43,14 @@ window.onload = function() {
     // For Firefox OS, don't display the "save" button.
     // Do this by setting the debugHide class for testing in debug mode.
     document.getElementById("saveTrackButton").classList.add("debugHide");
+    // For now, only show the upload UI on Firefox OS.
+    document.getElementById("uploadTrackButton").classList.remove("debugHide");
+    // Without OAuth, the login data is useless
+    //document.getElementById("uploadSettingsArea").classList.remove("debugHide");
+  }
+
+  if (gDebug) {
+    gOSMAPIURL = "http://api06.dev.openstreetmap.org/";
   }
 
   initDB();
@@ -61,13 +69,13 @@ window.onload = function() {
       gActionLabel.textContent = "";
       gAction.style.display = "none";
       setTracking(document.getElementById("trackCheckbox"));
-      gPrefs.get("osm_user", function(aValue) {
+      gPrefs.get(gDebug ? "osm_dev_user" : "osm_user", function(aValue) {
         if (aValue) {
           document.getElementById("uploadUser").value = aValue;
           document.getElementById("uploadTrackButton").disabled = false;
         }
       });
-      gPrefs.get("osm_pwd", function(aValue) {
+      gPrefs.get(gDebug ? "osm_dev_pwd" : "osm_pwd", function(aValue) {
         var upwd = document.getElementById("uploadPwd");
         if (aValue)
           document.getElementById("uploadPwd").value = aValue;
@@ -212,11 +220,11 @@ var uiEvHandler = {
 function setUploadField(aField) {
   switch (aField.id) {
     case "uploadUser":
-      gPrefs.set("osm_user", aField.value);
+      gPrefs.set(gDebug ? "osm_dev_user" : "osm_user", aField.value);
       document.getElementById("uploadTrackButton").disabled = !aField.value.length;
       break;
     case "uploadPwd":
-      gPrefs.set("osm_pwd", aField.value);
+      gPrefs.set(gDebug ? "osm_dev_pwd" : "osm_pwd", aField.value);
       break;
   }
 }
@@ -294,11 +302,6 @@ function uploadTrack() {
   formData.append("visibility", "private");
   var XHR = new XMLHttpRequest();
   XHR.onreadystatechange = function() {
-    if (XHR.readyState == 4) {/*
-      gLog.appendChild(document.createElement("li"))
-          .appendChild(document.createTextNode(aURL + " - " + XHR.status +
-                                               " " + XHR.statusText));*/
-    }
     if (XHR.readyState == 4 && XHR.status == 200) {
       // so far so good
       reportUploadStatus(true);
@@ -307,9 +310,10 @@ function uploadTrack() {
       reportUploadStatus(false);
     }
   };
-  XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true,
-           document.getElementById("uploadUser").value,
-           document.getElementById("uploadPwd").value);
+  XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
+  // Cross-Origin XHR doesn't allow username/password (HTTP Auth), so need to look into OAuth.
+  // But for now, we'll ask the user for entering credentials with this.
+  XHR.withCredentials = true;
   try {
     XHR.send(formData);
   }
