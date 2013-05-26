@@ -60,7 +60,7 @@ window.onload = function() {
 
   var loopCnt = 0;
   var waitForInitAndDraw = function() {
-    if ((gWaitCounter <= 0) || (loopCnt > 100)) {
+    if ((gWaitCounter <= 0) || (loopCnt > 1000)) {
       if (gWaitCounter <= 0)
         gWaitCounter = 0;
       else
