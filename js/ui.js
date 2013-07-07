@@ -55,47 +55,41 @@ window.onload = function() {
     gOSMAPIURL = "http://api06.dev.openstreetmap.org/";
   }
 
+  gAction.addEventListener("dbinit-done", initMap, false);
+  gAction.addEventListener("mapinit-done", postInit, false);
+  console.log("starting DB init...");
   initDB();
-  initMap();
+}
 
-  var loopCnt = 0;
-  var waitForInitAndDraw = function() {
-    if ((gWaitCounter <= 0) || (loopCnt > 100)) {
-      if (gWaitCounter <= 0)
-        gWaitCounter = 0;
-      else
-        console.log("Loading failed (waiting for init).");
-
-      gMapPrefsLoaded = true;
-      resizeAndDraw();
-      gActionLabel.textContent = "";
-      gAction.style.display = "none";
-      setTracking(document.getElementById("trackCheckbox"));
-      gPrefs.get(gDebug ? "osm_dev_user" : "osm_user", function(aValue) {
-        if (aValue) {
-          document.getElementById("uploadUser").value = aValue;
-          document.getElementById("uploadTrackButton").disabled = false;
-        }
-      });
-      gPrefs.get(gDebug ? "osm_dev_pwd" : "osm_pwd", function(aValue) {
-        var upwd = document.getElementById("uploadPwd");
-        if (aValue)
-          document.getElementById("uploadPwd").value = aValue;
-      });
+function postInit(aEvent) {
+  gAction.removeEventListener(aEvent.type, postInit, false);
+  console.log("init done, draw map.");
+  gMapPrefsLoaded = true;
+  resizeAndDraw();
+  gActionLabel.textContent = "";
+  gAction.style.display = "none";
+  setTracking(document.getElementById("trackCheckbox"));
+  gPrefs.get(gDebug ? "osm_dev_user" : "osm_user", function(aValue) {
+    if (aValue) {
+      document.getElementById("uploadUser").value = aValue;
+      document.getElementById("uploadTrackButton").disabled = false;
     }
-    else
-      setTimeout(waitForInitAndDraw, 100);
-    loopCnt++;
-  };
-  waitForInitAndDraw();
+  });
+  gPrefs.get(gDebug ? "osm_dev_pwd" : "osm_pwd", function(aValue) {
+    var upwd = document.getElementById("uploadPwd");
+    if (aValue)
+      document.getElementById("uploadPwd").value = aValue;
+  });
 }
 
 window.onresize = function() {
   resizeAndDraw();
 }
 
-function initDB() {
+function initDB(aEvent) {
   // Open DB.
+  if (aEvent)
+    gAction.removeEventListener(aEvent.type, initDB, false);
   var request = window.indexedDB.open("MainDB-lantea", 2);
   request.onerror = function(event) {
     // Errors can be handled here. Error codes explain in:
@@ -105,6 +99,8 @@ function initDB() {
   };
   request.onsuccess = function(event) {
     mainDB = request.result;
+    var throwEv = new CustomEvent("dbinit-done");
+    gAction.dispatchEvent(throwEv);
   };
   request.onupgradeneeded = function(event) {
     mainDB = request.result;

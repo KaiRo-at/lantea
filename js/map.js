@@ -89,74 +89,88 @@ function initMap() {
     }
   }
 
-  var loopCnt = 0;
-  var getPersistentPrefs = function() {
-    if (mainDB) {
-      gWaitCounter++;
-      gPrefs.get("position", function(aValue) {
-        if (aValue) {
-          gPos = aValue;
-          gWaitCounter--;
-        }
-      });
-      gWaitCounter++;
-      gPrefs.get("center_map", function(aValue) {
-        if (aValue === undefined)
-          document.getElementById("centerCheckbox").checked = true;
-        else
-          document.getElementById("centerCheckbox").checked = aValue;
-        setCentering(document.getElementById("centerCheckbox"));
-        gWaitCounter--;
-      });
-      gWaitCounter++;
-      gPrefs.get("tracking_enabled", function(aValue) {
-        if (aValue === undefined)
-          document.getElementById("trackCheckbox").checked = true;
-        else
-          document.getElementById("trackCheckbox").checked = aValue;
-        gWaitCounter--;
-      });
-      gWaitCounter++;
-      gTrackStore.getList(function(aTPoints) {
-        if (gDebug)
-          console.log(aTPoints.length + " points loaded.");
-        if (aTPoints.length) {
-          gTrack = aTPoints;
-        }
-        gWaitCounter--;
-      });
+  console.log("map vars set, loading prefs...");
+  loadPrefs();
+}
+
+function loadPrefs(aEvent) {
+  if (aEvent && aEvent.type == "prefs-step") {
+    console.log("wait: " + gWaitCounter);
+    if (gWaitCounter == 0) {
+      gAction.removeEventListener(aEvent.type, loadPrefs, false);
+      gMapPrefsLoaded = true;
+      console.log("prefs loaded.");
+
+      gTrackCanvas.addEventListener("mouseup", mapEvHandler, false);
+      gTrackCanvas.addEventListener("mousemove", mapEvHandler, false);
+      gTrackCanvas.addEventListener("mousedown", mapEvHandler, false);
+      gTrackCanvas.addEventListener("mouseout", mapEvHandler, false);
+
+      gTrackCanvas.addEventListener("touchstart", mapEvHandler, false);
+      gTrackCanvas.addEventListener("touchmove", mapEvHandler, false);
+      gTrackCanvas.addEventListener("touchend", mapEvHandler, false);
+      gTrackCanvas.addEventListener("touchcancel", mapEvHandler, false);
+      gTrackCanvas.addEventListener("touchleave", mapEvHandler, false);
+
+      gTrackCanvas.addEventListener("wheel", mapEvHandler, false);
+
+      document.getElementById("body").addEventListener("keydown", mapEvHandler, false);
+
+      document.getElementById("copyright").innerHTML =
+          gMapStyles[gActiveMap].copyright;
+
+      gLoadingTile = new Image();
+      gLoadingTile.src = "style/loading.png";
+      gLoadingTile.onload = function() {
+        var throwEv = new CustomEvent("mapinit-done");
+        gAction.dispatchEvent(throwEv);
+      };
     }
-    else
-      setTimeout(getPersistentPrefs, 100);
-    loopCnt++;
-    if (loopCnt > 50) {
-      console.log("Loading prefs failed.");
-    }
-  };
-  getPersistentPrefs();
-
-  gTrackCanvas.addEventListener("mouseup", mapEvHandler, false);
-  gTrackCanvas.addEventListener("mousemove", mapEvHandler, false);
-  gTrackCanvas.addEventListener("mousedown", mapEvHandler, false);
-  gTrackCanvas.addEventListener("mouseout", mapEvHandler, false);
-
-  gTrackCanvas.addEventListener("touchstart", mapEvHandler, false);
-  gTrackCanvas.addEventListener("touchmove", mapEvHandler, false);
-  gTrackCanvas.addEventListener("touchend", mapEvHandler, false);
-  gTrackCanvas.addEventListener("touchcancel", mapEvHandler, false);
-  gTrackCanvas.addEventListener("touchleave", mapEvHandler, false);
-
-  gTrackCanvas.addEventListener("wheel", mapEvHandler, false);
-
-  document.getElementById("body").addEventListener("keydown", mapEvHandler, false);
-
-  document.getElementById("copyright").innerHTML =
-      gMapStyles[gActiveMap].copyright;
-
-  gLoadingTile = new Image();
-  gLoadingTile.src = "style/loading.png";
-  gWaitCounter++;
-  gLoadingTile.onload = function() { gWaitCounter--; };
+  }
+  else {
+    if (aEvent)
+      gAction.removeEventListener(aEvent.type, loadPrefs, false);
+    gAction.addEventListener("prefs-step", loadPrefs, false);
+    gWaitCounter++;
+    gPrefs.get("position", function(aValue) {
+      if (aValue) {
+        gPos = aValue;
+        gWaitCounter--;
+      }
+    });
+    gWaitCounter++;
+    gPrefs.get("center_map", function(aValue) {
+      if (aValue === undefined)
+        document.getElementById("centerCheckbox").checked = true;
+      else
+        document.getElementById("centerCheckbox").checked = aValue;
+      setCentering(document.getElementById("centerCheckbox"));
+      gWaitCounter--;
+      var throwEv = new CustomEvent("prefs-step");
+      gAction.dispatchEvent(throwEv);
+    });
+    gWaitCounter++;
+    gPrefs.get("tracking_enabled", function(aValue) {
+      if (aValue === undefined)
+        document.getElementById("trackCheckbox").checked = true;
+      else
+        document.getElementById("trackCheckbox").checked = aValue;
+      gWaitCounter--;
+      var throwEv = new CustomEvent("prefs-step");
+      gAction.dispatchEvent(throwEv);
+    });
+    gWaitCounter++;
+    gTrackStore.getList(function(aTPoints) {
+      if (gDebug)
+        console.log(aTPoints.length + " points loaded.");
+      if (aTPoints.length) {
+        gTrack = aTPoints;
+      }
+      gWaitCounter--;
+      var throwEv = new CustomEvent("prefs-step");
+      gAction.dispatchEvent(throwEv);
+    });
+  }
 }
 
 function resizeAndDraw() {
