@@ -135,10 +135,10 @@ function loadPrefs(aEvent) {
     gPrefs.get("position", function(aValue) {
       if (aValue) {
         gPos = aValue;
-        gWaitCounter--;
-        var throwEv = new CustomEvent("prefs-step");
-        gAction.dispatchEvent(throwEv);
       }
+      gWaitCounter--;
+      var throwEv = new CustomEvent("prefs-step");
+      gAction.dispatchEvent(throwEv);
     });
     gWaitCounter++;
     gPrefs.get("center_map", function(aValue) {
