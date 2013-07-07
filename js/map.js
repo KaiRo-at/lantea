@@ -136,6 +136,8 @@ function loadPrefs(aEvent) {
       if (aValue) {
         gPos = aValue;
         gWaitCounter--;
+        var throwEv = new CustomEvent("prefs-step");
+        gAction.dispatchEvent(throwEv);
       }
     });
     gWaitCounter++;
