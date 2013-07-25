@@ -307,11 +307,19 @@ function saveTrackDump() {
 }
 
 function uploadTrack() {
+  // Hide all areas in the dialog.
   var dia = document.getElementById("dialogArea");
   var areas = dia.children;
   for (var i = 0; i <= areas.length - 1; i++) {
     areas[i].style.display = "none";
   }
+  // Reset all the fields in the status area.
+  document.getElementById("uploadStatusCloseButton").disabled = true;
+  document.getElementById("uploadInProgress").style.display = "block";
+  document.getElementById("uploadSuccess").style.display = "none";
+  document.getElementById("uploadErrorMsg").textContent = "";
+  document.getElementById("uploadError").style.display = "none";
+  // Now show the status area.
   document.getElementById("uploadStatus").style.display = "block";
 
   // See http://wiki.openstreetmap.org/wiki/Api06#Uploading_traces
@@ -443,6 +451,24 @@ var gTrackStore = {
         }
       };
     }
+  },
+
+  getListStepped: function(aCallback) {
+    if (!mainDB)
+      return;
+    var transaction = mainDB.transaction([this.objStore]);
+    var objStore = transaction.objectStore(this.objStore);
+    // Use cursor in reverse direction (so we get the most recent position first)
+    objStore.openCursor(null, "prev").onsuccess = function(event) {
+      var cursor = event.target.result;
+      if (cursor) {
+        aCallback(cursor.value);
+        cursor.continue();
+      }
+      else {
+        aCallback(null);
+      }
+    };
   },
 
   push: function(aValue, aCallback) {

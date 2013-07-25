@@ -162,15 +162,26 @@ function loadPrefs(aEvent) {
       gAction.dispatchEvent(throwEv);
     });
     gWaitCounter++;
-    gTrackStore.getList(function(aTPoints) {
-      if (gDebug)
-        console.log(aTPoints.length + " points loaded.");
-      if (aTPoints.length) {
-        gTrack = aTPoints;
+    var trackLoadStarted = false;
+    gTrackStore.getListStepped(function(aTPoint) {
+      if (aTPoint) {
+        // Add in front and return new length.
+        var tracklen = gTrack.unshift(aTPoint);
+        // Redraw track every 100 values (initial paint will do first anyhow).
+        if (tracklen % 100 == 0)
+          drawTrack();
       }
-      gWaitCounter--;
-      var throwEv = new CustomEvent("prefs-step");
-      gAction.dispatchEvent(throwEv);
+      else {
+        // Last point received.
+        drawTrack();
+      }
+      if (!trackLoadStarted) {
+        // We have the most recent point, if present, rest will load async.
+        trackLoadStarted = true;
+        gWaitCounter--;
+        var throwEv = new CustomEvent("prefs-step");
+        gAction.dispatchEvent(throwEv);
+      }
     });
   }
 }
@@ -355,6 +366,10 @@ function drawMap(aPixels, aOverdraw) {
       }
     }
   }
+  drawTrack();
+}
+
+function drawTrack() {
   gLastDrawnPoint = null;
   gCurPosMapCache = undefined;
   gTrackContext.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
@@ -756,7 +771,7 @@ function endTracking() {
 function clearTrack() {
   gTrack = [];
   gTrackStore.clear();
-  drawMap({left: 0, right: 0, top: 0, bottom: 0});
+  drawTrack();
 }
 
 var gTileService = {
