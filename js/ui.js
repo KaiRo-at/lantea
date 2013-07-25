@@ -333,22 +333,44 @@ function uploadTrack() {
   //formData.append("tags", "");
   formData.append("visibility",
                   document.getElementById("uploadVisibility").value);
-  var XHR = new XMLHttpRequest();
-  XHR.onreadystatechange = function() {
-    if (XHR.readyState == 4 && XHR.status == 200) {
-      // so far so good
-      reportUploadStatus(true);
-    } else if (XHR.readyState == 4 && XHR.status != 200) {
-      // fetched the wrong page or network error...
+  // Do an empty POST request first, so that we don't send everything,
+  // then ask for credentials, and then send again.
+  var hXHR = new XMLHttpRequest();
+  hXHR.onreadystatechange = function() {
+    if (hXHR.readyState == 4 && (XHR.status == 200 || hXHR.status == 400)) {
+      // 400 is Bad Request, but that's expected as this was empty.
+      // So far so good, init actual upload.
+      var XHR = new XMLHttpRequest();
+      XHR.onreadystatechange = function() {
+        if (XHR.readyState == 4 && XHR.status == 200) {
+          // Everthing looks fine.
+          reportUploadStatus(true);
+        } else if (XHR.readyState == 4 && XHR.status != 200) {
+          // Fetched the wrong page or network error...
+          reportUploadStatus(false);
+        }
+      };
+      XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
+      // Cross-Origin XHR doesn't allow username/password (HTTP Auth).
+      // So, we'll ask the user for entering credentials with rather ugly UI.
+      XHR.withCredentials = true;
+      try {
+        XHR.send(formData); // Send actual form data.
+      }
+      catch (e) {
+        reportUploadStatus(false, e);
+      }
+    } else if (hXHR.readyState == 4 && hXHR.status != 200) {
+      // Fetched the wrong page or network error...
       reportUploadStatus(false);
     }
   };
-  XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
+  hXHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
   // Cross-Origin XHR doesn't allow username/password (HTTP Auth).
   // So, we'll ask the user for entering credentials with rather ugly UI.
-  XHR.withCredentials = true;
+  hXHR.withCredentials = true;
   try {
-    XHR.send(formData);
+    hXHR.send(); // Empty request, see above.
   }
   catch (e) {
     reportUploadStatus(false, e);
