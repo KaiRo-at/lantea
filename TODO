@@ -2,6 +2,7 @@ Tasks to complete for Lantea Maps:
 
 Required:
 
+* Switch map to (2D) WebGL to improve panning performance
 * Improve tile cache:
 ** If cached tiles have changed, possibly also try (async) updates of other cached zoom levels covering this area
 ** Pre-cache tiles in adjacent areas and possibly zoom levels
@@ -13,7 +14,6 @@ Required:
 * Support pinch zoom gestures
 * Smooth animations for zooming, probably using some canvas magic
 * Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
-* Save GPX tiles to the web (OSM? Public cloud service? Private service?)
 * Better GPX saving implementation [blocked by missing web APIs]
 ** Set file name to save into to a good default (date + maybe some location name)
 
@@ -21,7 +21,7 @@ Nice To Have:
 
 * Possibility to auto-rotate map to match movement direction
 * GPS details display (satellite visibility/strength) [blocked by missing web APIs]
-* Magnetic compass display [blocked by missing web APIs]
+* Magnetic compass display (using orientiation API)
 
 Future Possibilities:
 
