@@ -489,7 +489,7 @@ var mapEvHandler = {
                 Math.pow(aEvent.targetTouches.item(1).clientY -
                          aEvent.targetTouches.item(0).clientY, 2)
             );
-            console.log('!!!' + gPinchStartWidth);
+            console.log('!!! ' + gPinchStartWidth);
           }
           gDragTouchID = aEvent.changedTouches.item(0).identifier;
           coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
@@ -513,6 +513,8 @@ var mapEvHandler = {
               Math.pow(aEvent.targetTouches.item(1).clientY -
                        aEvent.targetTouches.item(0).clientY, 2)
           );
+          if (!gPinchStartWidth)
+            gPinchStartWidth = curPinchStartWidth;
           console.log(gPinchStartWidth + ' <?> ' + curPinchStartWidth);
           if (gPinchStartWidth / curPinchStartWidth > 1.7 ||
               gPinchStartWidth / curPinchStartWidth < 0.6) {
@@ -537,6 +539,9 @@ var mapEvHandler = {
                 zoomIn();
               else
                 zoomOut();
+
+              // Reset pinch start width and start another pinch gesture.
+              gPinchStartWidth = null;
             }
           }
           break;
