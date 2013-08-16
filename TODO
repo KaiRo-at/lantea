@@ -11,7 +11,6 @@ Required:
 * Display movement speed
 * Display location accuracy
 * Show a better visible marker for the current location, possibly also indicating movement direction/speed
-* Support pinch zoom gestures
 * Smooth animations for zooming, probably using some canvas magic
 * Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
 * Better GPX saving implementation [blocked by missing web APIs]
