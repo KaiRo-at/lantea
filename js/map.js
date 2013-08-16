@@ -489,7 +489,6 @@ var mapEvHandler = {
                 Math.pow(aEvent.targetTouches.item(1).clientY -
                          aEvent.targetTouches.item(0).clientY, 2)
             );
-            console.log('!!! ' + gPinchStartWidth);
           }
           gDragTouchID = aEvent.changedTouches.item(0).identifier;
           coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
@@ -515,7 +514,7 @@ var mapEvHandler = {
           );
           if (!gPinchStartWidth)
             gPinchStartWidth = curPinchStartWidth;
-          console.log(gPinchStartWidth + ' <?> ' + curPinchStartWidth);
+
           if (gPinchStartWidth / curPinchStartWidth > 1.7 ||
               gPinchStartWidth / curPinchStartWidth < 0.6) {
             var newZoomLevel = gPos.z + (gPinchStartWidth < curPinchStartWidth ? 1 : -1);
@@ -544,6 +543,7 @@ var mapEvHandler = {
               gPinchStartWidth = null;
             }
           }
+          // If we are in a pinch, do not drag.
           break;
         }
         var x = coordObj.clientX - gMapCanvas.offsetLeft;
@@ -574,6 +574,7 @@ var mapEvHandler = {
         break;
       case "mouseup":
       case "touchend":
+        gPinchStartWidth = null;
         gDragging = false;
         showUI();
         break;
