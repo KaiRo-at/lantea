@@ -489,6 +489,7 @@ var mapEvHandler = {
                 Math.pow(aEvent.targetTouches.item(1).clientY -
                          aEvent.targetTouches.item(0).clientY, 2)
             );
+            console.log('!!!' + gPinchStartWidth);
           }
           gDragTouchID = aEvent.changedTouches.item(0).identifier;
           coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
