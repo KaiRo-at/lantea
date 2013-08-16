@@ -61,7 +61,7 @@ var gLoadingTile;
 var gMapPrefsLoaded = false;
 
 var gDragging = false;
-var gDragTouchID;
+var gDragTouchID, gPinchStartWidth;
 
 var gGeoWatchID;
 var gTrack = [];
@@ -482,6 +482,14 @@ var mapEvHandler = {
       case "mousedown":
       case "touchstart":
         if (touchEvent) {
+          if (aEvent.targetTouches.length == 2) {
+            gPinchStartWidth = Math.sqrt(
+                Math.pow(aEvent.targetTouches.item(1).clientX -
+                         aEvent.targetTouches.item(0).clientX, 2) +
+                Math.pow(aEvent.targetTouches.item(1).clientY -
+                         aEvent.targetTouches.item(0).clientY, 2)
+            );
+          }
           gDragTouchID = aEvent.changedTouches.item(0).identifier;
           coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
         }
@@ -497,6 +505,40 @@ var mapEvHandler = {
         break;
       case "mousemove":
       case "touchmove":
+        if (touchEvent && aEvent.targetTouches.length == 2) {
+          curPinchStartWidth = Math.sqrt(
+              Math.pow(aEvent.targetTouches.item(1).clientX -
+                       aEvent.targetTouches.item(0).clientX, 2) +
+              Math.pow(aEvent.targetTouches.item(1).clientY -
+                       aEvent.targetTouches.item(0).clientY, 2)
+          );
+          if (gPinchStartWidth / curPinchStartWidth > 1.7 ||
+              gPinchStartWidth / curPinchStartWidth < 0.6) {
+            var newZoomLevel = gPos.z + (gPinchStartWidth < curPinchStartWidth ? 1 : -1);
+            if ((newZoomLevel >= 0) && (newZoomLevel <= gMaxZoom)) {
+              // Calculate new center of the map - preserve middle of pinch.
+              // This means that pixel distance between old center and middle
+              // must equal pixel distance of new center and middle.
+              var x = (aEvent.targetTouches.item(1).clientX +
+                       aEvent.targetTouches.item(0).clientX) / 2 -
+                      gMapCanvas.offsetLeft;
+              var y = (aEvent.targetTouches.item(1).clientY +
+                       aEvent.targetTouches.item(0).clientY) / 2 -
+                      gMapCanvas.offsetTop;
+
+              // Zoom factor after this action.
+              var newZoomFactor = Math.pow(2, gMaxZoom - newZoomLevel);
+              gPos.x -= (x - gMapCanvas.width / 2) * (newZoomFactor - gZoomFactor);
+              gPos.y -= (y - gMapCanvas.height / 2) * (newZoomFactor - gZoomFactor);
+
+              if (gPinchStartWidth < curPinchStartWidth)
+                zoomIn();
+              else
+                zoomOut();
+            }
+          }
+          break;
+        }
         var x = coordObj.clientX - gMapCanvas.offsetLeft;
         var y = coordObj.clientY - gMapCanvas.offsetTop;
         if (gDragging === true) {
