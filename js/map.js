@@ -162,14 +162,17 @@ function loadPrefs(aEvent) {
       gAction.dispatchEvent(throwEv);
     });
     gWaitCounter++;
-    var trackLoadStarted = false;
+    var trackLoadStarted = false; redrawBase = 100;
     gTrackStore.getListStepped(function(aTPoint) {
       if (aTPoint) {
         // Add in front and return new length.
         var tracklen = gTrack.unshift(aTPoint);
-        // Redraw track every 100 values (initial paint will do first anyhow).
-        if (tracklen % 100 == 0)
+        // Redraw track periodically, larger distance the longer it gets.
+        // Initial paint will do initial track drawing.
+        if (tracklen % redrawBase == 0) {
           drawTrack();
+          redrawBase = tracklen;
+        }
       }
       else {
         // Last point received.

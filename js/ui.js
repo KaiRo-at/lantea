@@ -337,7 +337,7 @@ function uploadTrack() {
   // then ask for credentials, and then send again.
   var hXHR = new XMLHttpRequest();
   hXHR.onreadystatechange = function() {
-    if (hXHR.readyState == 4 && (XHR.status == 200 || hXHR.status == 400)) {
+    if (hXHR.readyState == 4 && (hXHR.status == 200 || hXHR.status == 400)) {
       // 400 is Bad Request, but that's expected as this was empty.
       // So far so good, init actual upload.
       var XHR = new XMLHttpRequest();
