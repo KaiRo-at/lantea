@@ -162,7 +162,8 @@ function loadPrefs(aEvent) {
       gAction.dispatchEvent(throwEv);
     });
     gWaitCounter++;
-    var trackLoadStarted = false, redrawBase = 100;
+    var trackLoadStarted = false;
+    var redrawBase = 100;
     gTrackStore.getListStepped(function(aTPoint) {
       if (aTPoint) {
         // Add in front and return new length.
