@@ -318,8 +318,9 @@ function uploadTrack() {
   document.getElementById("uploadStatusCloseButton").disabled = true;
   document.getElementById("uploadInProgress").style.display = "block";
   document.getElementById("uploadSuccess").style.display = "none";
-  document.getElementById("uploadErrorMsg").textContent = "";
+  document.getElementById("uploadFailed").style.display = "none";
   document.getElementById("uploadError").style.display = "none";
+  document.getElementById("uploadErrorMsg").textContent = "";
   // Now show the status area.
   document.getElementById("uploadStatus").style.display = "block";
 
