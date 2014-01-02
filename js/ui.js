@@ -246,8 +246,9 @@ function setUploadField(aField) {
 function makeISOString(aTimestamp) {
   // ISO time format is YYYY-MM-DDTHH:mm:ssZ
   var tsDate = new Date(aTimestamp);
+  // Note that .getUTCMonth() returns a number between 0 and 11 (0 for January)!
   return tsDate.getUTCFullYear() + "-" +
-         (tsDate.getUTCMonth() < 10 ? "0" : "") + tsDate.getUTCMonth() + "-" +
+         (tsDate.getUTCMonth() < 9 ? "0" : "") + (tsDate.getUTCMonth() + 1 ) + "-" +
          (tsDate.getUTCDate() < 10 ? "0" : "") + tsDate.getUTCDate() + "T" +
          (tsDate.getUTCHours() < 10 ? "0" : "") + tsDate.getUTCHours() + ":" +
          (tsDate.getUTCMinutes() < 10 ? "0" : "") + tsDate.getUTCMinutes() + ":" +
