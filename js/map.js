@@ -462,6 +462,10 @@ var mapEvHandler = {
   handleEvent: function(aEvent) {
     var touchEvent = aEvent.type.indexOf('touch') != -1;
 
+    if (touchEvent) {
+      aEvent.stopPropagation();
+    }
+
     // Bail out if the event is happening on an input.
     if (aEvent.target.tagName.toLowerCase() == "input")
       return;
