@@ -23,7 +23,7 @@ window.onload = function() {
     mSel.add(opt, null);
   }
 
-  var areas = document.getElementsByClassName('overlayArea');
+  var areas = document.getElementsByClassName("overlayArea");
   for (var i = 0; i <= areas.length - 1; i++) {
     areas[i].addEventListener("mouseup", uiEvHandler, false);
     areas[i].addEventListener("mousemove", uiEvHandler, false);
@@ -205,6 +205,16 @@ function showUploadDialog() {
   }
   document.getElementById("uploadDialog").style.display = "block";
   document.getElementById("uploadTrackButton").disabled = true;
+  dia.classList.remove("hidden");
+}
+
+function showGLWarningDialog() {
+  var dia = document.getElementById("dialogArea");
+  var areas = dia.children;
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].style.display = "none";
+  }
+  document.getElementById("noGLwarning").style.display = "block";
   dia.classList.remove("hidden");
 }
 
