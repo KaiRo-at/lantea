@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var gMapCanvas, gMapContext, gGLMapCanvas, gMapGL, gTrackCanvas, gTrackContext, gGeolocation;
+var gMapCanvas, gMapContext, gGLMapCanvas, gTrackCanvas, gTrackContext, gGeolocation;
 var gDebug = false;
 
 var gTileSize = 256;
@@ -79,15 +79,14 @@ function initMap() {
   try {
     // Try to grab the standard context. If it fails, fallback to experimental.
     // We also try to tell it we do not need a depth buffer.
-    gMapGL = gGLMapCanvas.getContext("webgl", {depth: false}) ||
-             gGLMapCanvas.getContext("experimental-webgl", {depth: false});
-    gMapGL.viewport(0, 0, gMapGL.drawingBufferWidth, gMapGL.drawingBufferHeight);
+    gMap.gl = gGLMapCanvas.getContext("webgl", {depth: false}) ||
+              gGLMapCanvas.getContext("experimental-webgl", {depth: false});
   }
   catch(e) {}
   // If we don't have a GL context, give up now
-  if (!gMapGL) {
+  if (!gMap.gl) {
     showGLWarningDialog();
-    gMapGL = null;
+    gMap.gl = null;
   }
   gTrackCanvas = document.getElementById("track");
   gTrackContext = gTrackCanvas.getContext("2d");
@@ -104,7 +103,7 @@ function initMap() {
     }
   }
 
-  gAction.addEventListener("prefload-done", initGL, false);
+  gAction.addEventListener("prefload-done", gMap.initGL, false);
 
   console.log("map vars set, loading prefs...");
   loadPrefs();
@@ -207,113 +206,160 @@ function loadPrefs(aEvent) {
   }
 }
 
-function initGL() {
-  if (gMapGL) {
-    gMapGL.clearColor(0.0, 0.0, 0.0, 0.5);                          // Set clear color to black, fully opaque.
-    gMapGL.clear(gMapGL.COLOR_BUFFER_BIT|gMapGL.DEPTH_BUFFER_BIT);  // Clear the color.
+var gMap = {
+  gl: null,
+  glShaderProgram: null,
+  glVertexPositionAttr: null,
+  glTextureCoordAttr: null,
+  glResolutionAttr: null,
+  glMapTexture: null,
 
-    // Create and initialize the shaders.
-    var vertShader = gMapGL.createShader(gMapGL.VERTEX_SHADER);
-    var vertShaderSource =
-      'attribute vec2 aVertexPosition;\n' +
-      'attribute vec2 aTextureCoord;\n\n' +
-      'uniform vec2 uResolution;\n\n' +
-      'varying highp vec2 vTextureCoord;\n\n' +
-      'void main(void) {\n' +
-      // convert the rectangle from pixels to -1.0 to +1.0 (clipspace) 0.0 to 1.0
-      '  vec2 clipSpace = aVertexPosition * 2.0 / uResolution - 1.0;\n' +
-      '  gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);\n' +
-      '  vTextureCoord = aTextureCoord;\n' +
-      '}';
-    var fragShader = gMapGL.createShader(gMapGL.FRAGMENT_SHADER);
-    var fragShaderSource =
-      'varying highp vec2 vTextureCoord;\n\n' +
-      'uniform sampler2D uImage;\n\n' +
-      'void main(void) {\n' +
-      '  gl_FragColor = texture2D(uImage, vTextureCoord);\n' +
-      '}';
+  getVertShaderSource: function() {
+    return 'attribute vec2 aVertexPosition;\n' +
+    'attribute vec2 aTextureCoord;\n\n' +
+    'uniform vec2 uResolution;\n\n' +
+    'varying highp vec2 vTextureCoord;\n\n' +
+    'void main(void) {\n' +
+    // convert the rectangle from pixels to -1.0 to +1.0 (clipspace) 0.0 to 1.0
+    '  vec2 clipSpace = aVertexPosition * 2.0 / uResolution - 1.0;\n' +
+    '  gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);\n' +
+    '  vTextureCoord = aTextureCoord;\n' +
+    '}'; },
+  getFragShaderSource:function() {
+    return 'varying highp vec2 vTextureCoord;\n\n' +
+    'uniform sampler2D uImage;\n\n' +
+    'void main(void) {\n' +
+    '  gl_FragColor = texture2D(uImage, vTextureCoord);\n' +
+    '}'; },
 
-    gMapGL.shaderSource(vertShader, vertShaderSource);
-    // Compile the shader program.
-    gMapGL.compileShader(vertShader);
-    // See if it compiled successfully.
-    if (!gMapGL.getShaderParameter(vertShader, gMapGL.COMPILE_STATUS)) {
-      console.log("An error occurred compiling the vertix shader: " + gMapGL.getShaderInfoLog(vertShader));
-      return null;
+  initGL: function() {
+    // When called from the event listener, the "this" reference doesn't work, so use the object name.
+    if (gMap.gl) {
+      gMap.gl.viewport(0, 0, gMap.gl.drawingBufferWidth, gMap.gl.drawingBufferHeight);
+      gMap.gl.clearColor(0.0, 0.0, 0.0, 0.5);                          // Set clear color to black, fully opaque.
+      gMap.gl.clear(gMap.gl.COLOR_BUFFER_BIT|gMap.gl.DEPTH_BUFFER_BIT);  // Clear the color.
+
+      // Create and initialize the shaders.
+      var vertShader = gMap.gl.createShader(gMap.gl.VERTEX_SHADER);
+      var fragShader = gMap.gl.createShader(gMap.gl.FRAGMENT_SHADER);
+      gMap.gl.shaderSource(vertShader, gMap.getVertShaderSource());
+      // Compile the shader program.
+      gMap.gl.compileShader(vertShader);
+      // See if it compiled successfully.
+      if (!gMap.gl.getShaderParameter(vertShader, gMap.gl.COMPILE_STATUS)) {
+        console.log("An error occurred compiling the vertex shader: " + gMap.gl.getShaderInfoLog(vertShader));
+        return null;
+      }
+      gMap.gl.shaderSource(fragShader, gMap.getFragShaderSource());
+      // Compile the shader program.
+      gMap.gl.compileShader(fragShader);
+      // See if it compiled successfully.
+      if (!gMap.gl.getShaderParameter(fragShader, gMap.gl.COMPILE_STATUS)) {
+        console.log("An error occurred compiling the fragment shader: " + gMap.gl.getShaderInfoLog(fragShader));
+        return null;
+      }
+
+      gMap.glShaderProgram = gMap.gl.createProgram();
+      gMap.gl.attachShader(gMap.glShaderProgram, vertShader);
+      gMap.gl.attachShader(gMap.glShaderProgram, fragShader);
+      gMap.gl.linkProgram(gMap.glShaderProgram);
+      // If creating the shader program failed, alert
+      if (!gMap.gl.getProgramParameter(gMap.glShaderProgram, gMap.gl.LINK_STATUS)) {
+        alert("Unable to initialize the shader program.");
+      }
+      gMap.gl.useProgram(gMap.glShaderProgram);
+      // Get locations of the attributes.
+      gMap.glVertexPositionAttr = gMap.gl.getAttribLocation(gMap.glShaderProgram, "aVertexPosition");
+      gMap.glTextureCoordAttr = gMap.gl.getAttribLocation(gMap.glShaderProgram, "aTextureCoord");
+      gMap.glResolutionAttr = gMap.gl.getUniformLocation(gMap.glShaderProgram, "uResolution");
+
+      var tileVerticesBuffer = gMap.gl.createBuffer();
+      gMap.gl.bindBuffer(gMap.gl.ARRAY_BUFFER, tileVerticesBuffer);
+      // The vertices are the coordinates of the corner points of the square.
+      var vertices = [
+        0.0,  0.0,
+        1.0,  0.0,
+        0.0,  1.0,
+        0.0,  1.0,
+        1.0,  0.0,
+        1.0,  1.0,
+      ];
+      gMap.gl.bufferData(gMap.gl.ARRAY_BUFFER, new Float32Array(vertices), gMap.gl.STATIC_DRAW);
+      gMap.gl.enableVertexAttribArray(gMap.glTextureCoordAttr);
+      gMap.gl.vertexAttribPointer(gMap.glTextureCoordAttr, 2, gMap.gl.FLOAT, false, 0, 0);
+
+      // Map Texture
+      gMap.glMapTexture = gMap.gl.createTexture();
+      gMap.gl.activeTexture(gMap.gl.TEXTURE0);
+      gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glMapTexture);
+      gMap.gl.uniform1i(gMap.gl.getUniformLocation(gMap.glShaderProgram, "uImage"), 0);
+      // Set params for how the texture minifies and magnifies (wrap params are not needed as we're power-of-two).
+      gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MIN_FILTER, gMap.gl.NEAREST);
+      gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MAG_FILTER, gMap.gl.NEAREST);
+      // Upload the image into the texture.
+      gMap.gl.texImage2D(gMap.gl.TEXTURE_2D, 0, gMap.gl.RGBA, gMap.gl.RGBA, gMap.gl.UNSIGNED_BYTE, gLoadingTile);
+
+      gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
+
+      // Create a buffer for the position of the rectangle corners.
+      var mapVerticesTextureCoordBuffer = gMap.gl.createBuffer();
+      gMap.gl.bindBuffer(gMap.gl.ARRAY_BUFFER, mapVerticesTextureCoordBuffer);
+      gMap.gl.enableVertexAttribArray(gMap.glVertexPositionAttr);
+      gMap.gl.vertexAttribPointer(gMap.glVertexPositionAttr, 2, gMap.gl.FLOAT, false, 0, 0);
     }
-    gMapGL.shaderSource(fragShader, fragShaderSource);
-    // Compile the shader program.
-    gMapGL.compileShader(fragShader);
-    // See if it compiled successfully.
-    if (!gMapGL.getShaderParameter(fragShader, gMapGL.COMPILE_STATUS)) {
-      console.log("An error occurred compiling the fragment shader: " + gMapGL.getShaderInfoLog(fragShader));
-      return null;
-    }
 
-    var shaderProgram = gMapGL.createProgram();
-    gMapGL.attachShader(shaderProgram, vertShader);
-    gMapGL.attachShader(shaderProgram, fragShader);
-    gMapGL.linkProgram(shaderProgram);
-    // If creating the shader program failed, alert
-    if (!gMapGL.getProgramParameter(shaderProgram, gMapGL.LINK_STATUS)) {
-      alert("Unable to initialize the shader program.");
-    }
-    gMapGL.useProgram(shaderProgram);
-    var vertexPositionAttribute = gMapGL.getAttribLocation(shaderProgram, "aVertexPosition");
-    var textureCoordAttribute = gMapGL.getAttribLocation(shaderProgram, "aTextureCoord");
-    var resolutionAttribute = gMapGL.getUniformLocation(shaderProgram, "uResolution");
+    var throwEv = new CustomEvent("mapinit-done");
+    gAction.dispatchEvent(throwEv);
+  },
 
-    var tileVerticesBuffer = gMapGL.createBuffer();
-    gMapGL.bindBuffer(gMapGL.ARRAY_BUFFER, tileVerticesBuffer);
-    // The vertices are the coordinates of the corner points of the square.
-    var vertices = [
-      0.0,  0.0,
-      1.0,  0.0,
-      0.0,  1.0,
-      0.0,  1.0,
-      1.0,  0.0,
-      1.0,  1.0];
-    gMapGL.bufferData(gMapGL.ARRAY_BUFFER, new Float32Array(vertices), gMapGL.STATIC_DRAW);
-    gMapGL.enableVertexAttribArray(textureCoordAttribute);
-    gMapGL.vertexAttribPointer(textureCoordAttribute, 2, gMapGL.FLOAT, false, 0, 0);
+  drawGL: function() {
+    if (!gMap.gl) { return; }
 
-    // Map Texture
-    var mapTexture = gMapGL.createTexture();
-    gMapGL.bindTexture(gMapGL.TEXTURE_2D, mapTexture);
-    // Set the parameters so we can render any size image.
-    gMapGL.texParameteri(gMapGL.TEXTURE_2D, gMapGL.TEXTURE_WRAP_S, gMapGL.CLAMP_TO_EDGE);
-    gMapGL.texParameteri(gMapGL.TEXTURE_2D, gMapGL.TEXTURE_WRAP_T, gMapGL.CLAMP_TO_EDGE);
-    gMapGL.texParameteri(gMapGL.TEXTURE_2D, gMapGL.TEXTURE_MIN_FILTER, gMapGL.NEAREST);
-    gMapGL.texParameteri(gMapGL.TEXTURE_2D, gMapGL.TEXTURE_MAG_FILTER, gMapGL.NEAREST);
-    // Upload the image into the texture.
-    gMapGL.texImage2D(gMapGL.TEXTURE_2D, 0, gMapGL.RGBA, gMapGL.RGBA, gMapGL.UNSIGNED_BYTE, gLoadingTile);
-
-    gMapGL.uniform2f(resolutionAttribute, gGLMapCanvas.width, gGLMapCanvas.height);
-
-    // Create a buffer for the position of the rectangle corners.
-    var mapVerticesTextureCoordBuffer = gMapGL.createBuffer();
-    gMapGL.bindBuffer(gMapGL.ARRAY_BUFFER, mapVerticesTextureCoordBuffer);
-    var x_start = 10;
-    var i_width = 512;
+    var x_start = 0;
+    var i_width = 256;
     var y_start = 10;
-    var i_height = 512;
+    var i_height = 256;
     var textureCoordinates = [
       x_start, y_start,
       x_start + i_width, y_start,
       x_start, y_start + i_height,
       x_start, y_start + i_height,
       x_start + i_width, y_start,
-      x_start + i_width, y_start + i_height];
-    gMapGL.bufferData(gMapGL.ARRAY_BUFFER, new Float32Array(textureCoordinates), gMapGL.STATIC_DRAW);
-    gMapGL.enableVertexAttribArray(vertexPositionAttribute);
-    gMapGL.vertexAttribPointer(vertexPositionAttribute, 2, gMapGL.FLOAT, false, 0, 0);
+      x_start + i_width, y_start + i_height,
+    ];
+    gMap.gl.bufferData(gMap.gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gMap.gl.STATIC_DRAW);
 
     // There are 6 indices in textureCoordinates.
-    gMapGL.drawArrays(gMapGL.TRIANGLES, 0, 6);
-  }
+    gMap.gl.drawArrays(gMap.gl.TRIANGLES, 0, 6);
 
-  var throwEv = new CustomEvent("mapinit-done");
-  gAction.dispatchEvent(throwEv);
+    var x_start = 400;
+    var i_width = 256;
+    var y_start = 10;
+    var i_height = 256;
+    var textureCoordinates = [
+      x_start, y_start,
+      x_start + i_width, y_start,
+      x_start, y_start + i_height,
+      x_start, y_start + i_height,
+      x_start + i_width, y_start,
+      x_start + i_width, y_start + i_height,
+    ];
+    gMap.gl.bufferData(gMap.gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gMap.gl.STATIC_DRAW);
+    // gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glMapTexture);
+
+    // There are 6 indices in textureCoordinates.
+    gMap.gl.drawArrays(gMap.gl.TRIANGLES, 0, 6);
+
+  },
+
+  resizeAndDrawGL: function() {
+    if (!gMap.gl) { return; }
+
+    gMap.gl.viewport(0, 0, gMap.gl.drawingBufferWidth, gMap.gl.drawingBufferHeight);
+    gMap.gl.clear(gMap.gl.COLOR_BUFFER_BIT);  // Clear the color.
+    gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
+    gMap.drawGL();
+  },
 }
 
 function resizeAndDraw() {
@@ -324,10 +370,10 @@ function resizeAndDraw() {
     gMapCanvas.height = viewportHeight;
     gGLMapCanvas.width = viewportWidth;
     gGLMapCanvas.height = viewportHeight;
-    gMapGL.viewport(0, 0, gMapGL.drawingBufferWidth, gMapGL.drawingBufferHeight);
     gTrackCanvas.width = viewportWidth;
     gTrackCanvas.height = viewportHeight;
     drawMap();
+    gMap.resizeAndDrawGL();
     showUI();
   }
 }
