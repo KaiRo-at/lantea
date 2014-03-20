@@ -204,6 +204,8 @@ var gMap = {
   glTextureCoordAttr: null,
   glResolutionAttr: null,
   glMapTexture: null,
+  glTextures: {},
+  glTextureKeys: {},
 
   activeMap: "osm_mapnik",
   tileSize: 256,
@@ -289,16 +291,7 @@ var gMap = {
       gMap.gl.enableVertexAttribArray(gMap.glTextureCoordAttr);
       gMap.gl.vertexAttribPointer(gMap.glTextureCoordAttr, 2, gMap.gl.FLOAT, false, 0, 0);
 
-      // Map Texture
-      gMap.glMapTexture = gMap.gl.createTexture();
-      gMap.gl.activeTexture(gMap.gl.TEXTURE0);
-      gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glMapTexture);
-      gMap.gl.uniform1i(gMap.gl.getUniformLocation(gMap.glShaderProgram, "uImage"), 0);
-      // Set params for how the texture minifies and magnifies (wrap params are not needed as we're power-of-two).
-      gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MIN_FILTER, gMap.gl.NEAREST);
-      gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MAG_FILTER, gMap.gl.NEAREST);
-      // Upload the image into the texture.
-      gMap.gl.texImage2D(gMap.gl.TEXTURE_2D, 0, gMap.gl.RGBA, gMap.gl.RGBA, gMap.gl.UNSIGNED_BYTE, gLoadingTile);
+      gMap.loadImageToTexture(gLoadingTile, 0, "loading::0,0,0");
 
       gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
 
@@ -316,8 +309,8 @@ var gMap = {
   drawGLTest: function() {
     if (!gMap.gl) { return; }
 
-    this.drawTileGL(5, 10);
-    this.drawTileGL(300, 20);
+    this.drawTileGL(5, 10, 0);
+    this.drawTileGL(300, 20, 0);
   },
 
   drawGL: function(aPixels, aOverdraw) {
@@ -330,7 +323,7 @@ var gMap = {
     //if (!aPixels)
       aPixels = {left: gMap.gl.drawingBufferWidth, right: gMap.gl.drawingBufferWidth,
                  top: gMap.gl.drawingBufferHeight, bottom: gMap.gl.drawingBufferHeight};
-    //if (!aOverdraw)
+    if (!aOverdraw)
       aOverdraw = false;
 
     document.getElementById("zoomLevel").textContent = gMap.pos.z;
@@ -369,12 +362,12 @@ var gMap = {
           // Draw placeholder tile unless we overdraw.
           if (!aOverdraw &&
               (x < tiles.left -1  || x > tiles.right + 1 ||
-              y < tiles.top -1 || y > tiles.bottom + 1))
-            gMap.drawTileGL(xoff, yoff);
-/*
+              y < tiles.top -1 || y > tiles.bottom + 1)) {
+            gMap.drawTileGL(xoff, yoff, 0);
+          }
           // Initiate loading/drawing of the actual tile.
           gTileService.get(gMap.activeMap, {x: x, y: y, z: gMap.pos.z},
-                          function(aImage, aStyle, aCoords) {
+                          function(aImage, aStyle, aCoords, aTileKey) {
             // Only draw if this applies for the current view.
             if ((aStyle == gMap.activeMap) && (aCoords.z == gMap.pos.z)) {
               var ixMin = gMap.pos.x - wid / 2;
@@ -386,12 +379,16 @@ var gMap = {
               var imgObj = new Image();
               imgObj.src = imgURL;
               imgObj.onload = function() {
-                gMapContext.drawImage(imgObj, ixoff, iyoff);
+                var txIndex = gMap.glTextureKeys[aTileKey];
+                if (!txIndex) {
+                  txIndex = Object.keys(gMap.glTextureKeys).length;
+                  gMap.loadImageToTexture(imgObj, txIndex, aTileKey);
+                }
+                gMap.drawTileGL(ixoff, iyoff, txIndex);
                 URL.revokeObjectURL(imgURL);
               }
             }
           });
-*/
         }
       }
     }
@@ -408,7 +405,9 @@ var gMap = {
     gMap.drawGL();
   },
 
-  drawTileGL: function(aLeft, aRight) {
+  drawTileGL: function(aLeft, aRight, aTextureIndex) {
+    gMap.gl.activeTexture(gMap.gl.TEXTURE0 + aTextureIndex);
+    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTextureIndex]);
     var x_start = aLeft;
     var i_width = gMap.tileSize;
     var y_start = aRight;
@@ -422,11 +421,24 @@ var gMap = {
       x_start + i_width, y_start + i_height,
     ];
     gMap.gl.bufferData(gMap.gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gMap.gl.STATIC_DRAW);
-    // gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glMapTexture);
 
     // There are 6 indices in textureCoordinates.
     gMap.gl.drawArrays(gMap.gl.TRIANGLES, 0, 6);
-  }
+  },
+
+  loadImageToTexture: function(aImage, aTextureIndex, aTileKey) {
+    gMap.glTextureKeys[aTileKey] = aTextureIndex;
+    // Create and bind texture.
+    gMap.glTextures[aTextureIndex] = gMap.gl.createTexture();
+    gMap.gl.activeTexture(gMap.gl.TEXTURE0 + aTextureIndex);
+    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTextureIndex]);
+    gMap.gl.uniform1i(gMap.gl.getUniformLocation(gMap.glShaderProgram, "uImage"), 0);
+    // Set params for how the texture minifies and magnifies (wrap params are not needed as we're power-of-two).
+    gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MIN_FILTER, gMap.gl.NEAREST);
+    gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MAG_FILTER, gMap.gl.NEAREST);
+    // Upload the image into the texture.
+    gMap.gl.texImage2D(gMap.gl.TEXTURE_2D, 0, gMap.gl.RGBA, gMap.gl.RGBA, gMap.gl.UNSIGNED_BYTE, aImage);
+  },
 }
 
 function resizeAndDraw() {
@@ -542,6 +554,7 @@ function decodeIndex(encodedIdx) {
 
 function drawMap(aPixels, aOverdraw) {
   gMap.drawGL(aPixels, aOverdraw);
+  /*
   // aPixels is an object with left/right/top/bottom members telling how many
   //   pixels on the borders should actually be drawn.
   // aOverdraw is a bool that tells if we should draw placeholders or draw
@@ -593,7 +606,7 @@ function drawMap(aPixels, aOverdraw) {
 
         // Initiate loading/drawing of the actual tile.
         gTileService.get(gMap.activeMap, {x: x, y: y, z: gMap.pos.z},
-                         function(aImage, aStyle, aCoords) {
+                         function(aImage, aStyle, aCoords, aTileKey) {
           // Only draw if this applies for the current view.
           if ((aStyle == gMap.activeMap) && (aCoords.z == gMap.pos.z)) {
             var ixMin = gMap.pos.x - wid / 2;
@@ -613,6 +626,7 @@ function drawMap(aPixels, aOverdraw) {
       }
     }
   }
+  */
   drawTrack();
 }
 
@@ -1086,7 +1100,7 @@ var gTileService = {
     this.getDBCache(dbkey, function(aResult, aEvent) {
       if (aResult) {
         // We did get a cached object.
-        aCallback(aResult.image, aStyle, aCoords);
+        aCallback(aResult.image, aStyle, aCoords, dbkey);
         // Look at the timestamp and return if it's not too old.
         if (aResult.timestamp + gTileService.ageLimit > Date.now())
           return;
@@ -1108,7 +1122,7 @@ var gTileService = {
       XHR.addEventListener("load", function () {
         if (XHR.status === 200) {
           var blob = XHR.response;
-          aCallback(blob, aStyle, aCoords);
+          aCallback(blob, aStyle, aCoords, dbkey);
           gTileService.setDBCache(dbkey, {image: blob, timestamp: Date.now()});
         }
       }, false);
