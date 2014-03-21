@@ -65,7 +65,7 @@ function postInit(aEvent) {
   gAction.removeEventListener(aEvent.type, postInit, false);
   console.log("init done, draw map.");
   gMapPrefsLoaded = true;
-  resizeAndDraw();
+  gMap.resizeAndDraw();
   gActionLabel.textContent = "";
   gAction.style.display = "none";
   setTracking(document.getElementById("trackCheckbox"));
@@ -83,7 +83,7 @@ function postInit(aEvent) {
 }
 
 window.onresize = function() {
-  resizeAndDraw();
+  gMap.resizeAndDraw();
 }
 
 function initDB(aEvent) {

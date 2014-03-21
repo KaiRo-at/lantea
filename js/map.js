@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var gMapCanvas, gMapContext, gGLMapCanvas, gTrackCanvas, gTrackContext, gGeolocation;
+var gGLMapCanvas, gTrackCanvas, gTrackContext, gGeolocation;
 var gDebug = false;
 
 var gMinTrackAccuracy = 1000; // meters
@@ -63,10 +63,8 @@ var gCurPosMapCache;
 
 function initMap() {
   gGeolocation = navigator.geolocation;
-  // Set up canvas contexts. TODO: Remove 2D map once GL support works.
-  gMapCanvas = document.getElementById("map");
-  gMapContext = gMapCanvas.getContext("2d");
-  gGLMapCanvas = document.getElementById("glmap");
+  // Set up canvas context.
+  gGLMapCanvas = document.getElementById("map");
   try {
     // Try to grab the standard context. If it fails, fallback to experimental.
     // We also try to tell it we do not need a depth buffer.
@@ -140,7 +138,7 @@ function loadPrefs(aEvent) {
     gAction.addEventListener("prefs-step", loadPrefs, false);
     gWaitCounter++;
     gPrefs.get("position", function(aValue) {
-      if (aValue) {
+      if (aValue && aValue.x && aValue.y && aValue.z) {
         gMap.pos = aValue;
       }
       gWaitCounter--;
@@ -216,6 +214,9 @@ var gMap = {
     y: 23670000.0, // The range is 0-67108864 (2^gMap.maxZoom * gMap.tileSize)
     z: 5           // This could be fractional if supported being between zoom levels.
   },
+
+  get width() { return gMap.gl ? gMap.gl.drawingBufferWidth : gGLMapCanvas.width; },
+  get height() { return gMap.gl ? gMap.gl.drawingBufferHeight : gGLMapCanvas.height; },
 
   getVertShaderSource: function() {
     return 'attribute vec2 aVertexPosition;\n' +
@@ -306,11 +307,9 @@ var gMap = {
     gAction.dispatchEvent(throwEv);
   },
 
-  drawGLTest: function() {
-    if (!gMap.gl) { return; }
-
-    this.drawTileGL(5, 10, 0);
-    this.drawTileGL(300, 20, 0);
+  draw: function(aPixels, aOverdraw) {
+    gMap.drawGL(aPixels, aOverdraw);
+    drawTrack();
   },
 
   drawGL: function(aPixels, aOverdraw) {
@@ -379,6 +378,7 @@ var gMap = {
               var imgObj = new Image();
               imgObj.src = imgURL;
               imgObj.onload = function() {
+                // TODO: Do actually paint in a separate function, called on requestAnimationFrame.
                 var txIndex = gMap.glTextureKeys[aTileKey];
                 if (!txIndex) {
                   txIndex = Object.keys(gMap.glTextureKeys).length;
@@ -392,17 +392,27 @@ var gMap = {
         }
       }
     }
-    //drawTrack();
   },
 
-  resizeAndDrawGL: function() {
-    if (!gMap.gl) { return; }
-
-    gMap.gl.viewport(0, 0, gMap.gl.drawingBufferWidth, gMap.gl.drawingBufferHeight);
-    gMap.gl.clear(gMap.gl.COLOR_BUFFER_BIT);  // Clear the color.
-    gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
-    //gMap.drawGLTest();
-    gMap.drawGL();
+  resizeAndDraw: function() {
+    var viewportWidth = Math.min(window.innerWidth, window.outerWidth);
+    var viewportHeight = Math.min(window.innerHeight, window.outerHeight);
+    if (gGLMapCanvas && gTrackCanvas) {
+      gGLMapCanvas.width = viewportWidth;
+      gGLMapCanvas.height = viewportHeight;
+      gTrackCanvas.width = viewportWidth;
+      gTrackCanvas.height = viewportHeight;
+      if (gMap.gl) {
+        // Size viewport to canvas size.
+        gMap.gl.viewport(0, 0, gMap.gl.drawingBufferWidth, gMap.gl.drawingBufferHeight);
+        // Clear the color.
+        gMap.gl.clear(gMap.gl.COLOR_BUFFER_BIT);
+        // Make sure the vertex shader get the right resolution.
+        gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
+      }
+      gMap.draw();
+      showUI();
+    }
   },
 
   drawTileGL: function(aLeft, aRight, aTextureIndex) {
@@ -441,36 +451,20 @@ var gMap = {
   },
 }
 
-function resizeAndDraw() {
-  var viewportWidth = Math.min(window.innerWidth, window.outerWidth);
-  var viewportHeight = Math.min(window.innerHeight, window.outerHeight);
-  if (gMapCanvas && gGLMapCanvas && gTrackCanvas) {
-    gMapCanvas.width = viewportWidth;
-    gMapCanvas.height = viewportHeight;
-    gGLMapCanvas.width = viewportWidth;
-    gGLMapCanvas.height = viewportHeight;
-    gTrackCanvas.width = viewportWidth;
-    gTrackCanvas.height = viewportHeight;
-    drawMap();
-    gMap.resizeAndDrawGL();
-    showUI();
-  }
-}
-
 // Using scale(x, y) together with drawing old data on scaled canvas would be an improvement for zooming.
 // See https://developer.mozilla.org/en-US/docs/Canvas_tutorial/Transformations#Scaling
 
 function zoomIn() {
   if (gMap.pos.z < gMap.maxZoom) {
     gMap.pos.z++;
-    drawMap();
+    gMap.draw();
   }
 }
 
 function zoomOut() {
   if (gMap.pos.z > 0) {
     gMap.pos.z--;
-    drawMap();
+    gMap.draw();
   }
 }
 
@@ -478,7 +472,7 @@ function zoomTo(aTargetLevel) {
   aTargetLevel = parseInt(aTargetLevel);
   if (aTargetLevel >= 0 && aTargetLevel <= gMap.maxZoom) {
     gMap.pos.z = aTargetLevel;
-    drawMap();
+    gMap.draw();
   }
 }
 
@@ -507,7 +501,7 @@ function setMapStyle() {
     document.getElementById("copyright").innerHTML =
         gMapStyles[gMap.activeMap].copyright;
     showUI();
-    drawMap();
+    gMap.draw();
   }
 }
 
@@ -529,8 +523,8 @@ function isOutsideWindow(t) {
   var pos = decodeIndex(t);
 
   var zoomFactor = Math.pow(2, gMap.maxZoom - pos.z);
-  var wid = gMapCanvas.width * zoomFactor;
-  var ht = gMapCanvas.height * zoomFactor;
+  var wid = gMap.width * zoomFactor;
+  var ht = gMap.height * zoomFactor;
 
   pos.x *= zoomFactor;
   pos.y *= zoomFactor;
@@ -552,84 +546,6 @@ function decodeIndex(encodedIdx) {
   return {x: ind[0], y: ind[1], z: ind[2]};
 }
 
-function drawMap(aPixels, aOverdraw) {
-  gMap.drawGL(aPixels, aOverdraw);
-  /*
-  // aPixels is an object with left/right/top/bottom members telling how many
-  //   pixels on the borders should actually be drawn.
-  // aOverdraw is a bool that tells if we should draw placeholders or draw
-  //   straight over the existing content.
-  if (!aPixels)
-    aPixels = {left: gMapCanvas.width, right: gMapCanvas.width,
-               top: gMapCanvas.height, bottom: gMapCanvas.height};
-  if (!aOverdraw)
-    aOverdraw = false;
-
-  document.getElementById("zoomLevel").textContent = gMap.pos.z;
-  gMap.zoomFactor = Math.pow(2, gMap.maxZoom - gMap.pos.z);
-  var wid = gMapCanvas.width * gMap.zoomFactor; // Width in level 18 pixels.
-  var ht = gMapCanvas.height * gMap.zoomFactor; // Height in level 18 pixels.
-  var size = gMap.tileSize * gMap.zoomFactor; // Tile size in level 18 pixels.
-
-  var xMin = gMap.pos.x - wid / 2; // Corners of the window in level 18 pixels.
-  var yMin = gMap.pos.y - ht / 2;
-  var xMax = gMap.pos.x + wid / 2;
-  var yMax = gMap.pos.y + ht / 2;
-
-  if (gMapPrefsLoaded && mainDB)
-    gPrefs.set("position", gMap.pos);
-
-  var tiles = {left: Math.ceil((xMin + aPixels.left * gMap.zoomFactor) / size) -
-                               (aPixels.left ? 0 : 1),
-               right: Math.floor((xMax - aPixels.right * gMap.zoomFactor) / size) -
-                                 (aPixels.right ? 1 : 0),
-               top: Math.ceil((yMin + aPixels.top * gMap.zoomFactor) / size) -
-                              (aPixels.top ? 0 : 1),
-               bottom: Math.floor((yMax - aPixels.bottom * gMap.zoomFactor) / size) -
-                                  (aPixels.bottom ? 1 : 0)};
-
-  // Go through all the tiles in the map, find out if to draw them and do so.
-  for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
-    for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
-      // Only go to the drawing step if we need to draw this tile.
-      if (x < tiles.left || x > tiles.right ||
-          y < tiles.top || y > tiles.bottom) {
-        // Round here is **CRUCIAL** otherwise the images are filtered
-        // and the performance sucks (more than expected).
-        var xoff = Math.round((x * size - xMin) / gMap.zoomFactor);
-        var yoff = Math.round((y * size - yMin) / gMap.zoomFactor);
-        // Draw placeholder tile unless we overdraw.
-        if (!aOverdraw &&
-            (x < tiles.left -1  || x > tiles.right + 1 ||
-             y < tiles.top -1 || y > tiles.bottom + 1))
-          gMapContext.drawImage(gLoadingTile, xoff, yoff);
-
-        // Initiate loading/drawing of the actual tile.
-        gTileService.get(gMap.activeMap, {x: x, y: y, z: gMap.pos.z},
-                         function(aImage, aStyle, aCoords, aTileKey) {
-          // Only draw if this applies for the current view.
-          if ((aStyle == gMap.activeMap) && (aCoords.z == gMap.pos.z)) {
-            var ixMin = gMap.pos.x - wid / 2;
-            var iyMin = gMap.pos.y - ht / 2;
-            var ixoff = Math.round((aCoords.x * size - ixMin) / gMap.zoomFactor);
-            var iyoff = Math.round((aCoords.y * size - iyMin) / gMap.zoomFactor);
-            var URL = window.URL;
-            var imgURL = URL.createObjectURL(aImage);
-            var imgObj = new Image();
-            imgObj.src = imgURL;
-            imgObj.onload = function() {
-              gMapContext.drawImage(imgObj, ixoff, iyoff);
-              URL.revokeObjectURL(imgURL);
-            }
-          }
-        });
-      }
-    }
-  }
-  */
-  drawTrack();
-}
-
 function drawTrack() {
   gLastDrawnPoint = null;
   gCurPosMapCache = undefined;
@@ -646,8 +562,8 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
   var trackpoint = gps2xy(aLatitude, aLongitude);
   // lastPoint is for optimizing (not actually executing the draw until the last)
   trackpoint.optimized = (lastPoint === false);
-  var mappos = {x: Math.round((trackpoint.x - gMap.pos.x) / gMap.zoomFactor + gMapCanvas.width / 2),
-                y: Math.round((trackpoint.y - gMap.pos.y) / gMap.zoomFactor + gMapCanvas.height / 2)};
+  var mappos = {x: Math.round((trackpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                y: Math.round((trackpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
 
   if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
     gTrackContext.strokeStyle = gTrackColor;
@@ -669,8 +585,8 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
   else {
     if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
       gTrackContext.beginPath();
-      gTrackContext.moveTo(Math.round((gLastDrawnPoint.x - gMap.pos.x) / gMap.zoomFactor + gMapCanvas.width / 2),
-                           Math.round((gLastDrawnPoint.y - gMap.pos.y) / gMap.zoomFactor + gMapCanvas.height / 2));
+      gTrackContext.moveTo(Math.round((gLastDrawnPoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                           Math.round((gLastDrawnPoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2));
     }
     gTrackContext.lineTo(mappos.x, mappos.y);
     if (!trackpoint.optimized)
@@ -682,8 +598,8 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
 function drawCurrentLocation(trackPoint) {
   var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
   var circleRadius = Math.round(gCurLocSize / 2);
-  var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMapCanvas.width / 2),
-                y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMapCanvas.height / 2)};
+  var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
 
   undrawCurrentLocation();
 
@@ -706,8 +622,8 @@ function drawCurrentLocation(trackPoint) {
 function undrawCurrentLocation() {
   if (gCurPosMapCache) {
     var oldpoint = gCurPosMapCache.point;
-    var oldmp = {x: Math.round((oldpoint.x - gMap.pos.x) / gMap.zoomFactor + gMapCanvas.width / 2),
-                 y: Math.round((oldpoint.y - gMap.pos.y) / gMap.zoomFactor + gMapCanvas.height / 2)};
+    var oldmp = {x: Math.round((oldpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                 y: Math.round((oldpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
     gTrackContext.putImageData(gCurPosMapCache.data,
                                oldmp.x - gCurPosMapCache.radius,
                                oldmp.y - gCurPosMapCache.radius);
@@ -758,8 +674,8 @@ var mapEvHandler = {
           gDragTouchID = aEvent.changedTouches.item(0).identifier;
           coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
         }
-        var x = coordObj.clientX - gMapCanvas.offsetLeft;
-        var y = coordObj.clientY - gMapCanvas.offsetTop;
+        var x = coordObj.clientX - gGLMapCanvas.offsetLeft;
+        var y = coordObj.clientY - gGLMapCanvas.offsetTop;
 
         if (touchEvent || aEvent.button === 0) {
           gDragging = true;
@@ -789,15 +705,15 @@ var mapEvHandler = {
               // must equal pixel distance of new center and middle.
               var x = (aEvent.targetTouches.item(1).clientX +
                        aEvent.targetTouches.item(0).clientX) / 2 -
-                      gMapCanvas.offsetLeft;
+                      gGLMapCanvas.offsetLeft;
               var y = (aEvent.targetTouches.item(1).clientY +
                        aEvent.targetTouches.item(0).clientY) / 2 -
-                      gMapCanvas.offsetTop;
+                      gGLMapCanvas.offsetTop;
 
               // Zoom factor after this action.
               var newZoomFactor = Math.pow(2, gMap.maxZoom - newZoomLevel);
-              gMap.pos.x -= (x - gMapCanvas.width / 2) * (newZoomFactor - gMap.zoomFactor);
-              gMap.pos.y -= (y - gMapCanvas.height / 2) * (newZoomFactor - gMap.zoomFactor);
+              gMap.pos.x -= (x - gMap.width / 2) * (newZoomFactor - gMap.zoomFactor);
+              gMap.pos.y -= (y - gMap.height / 2) * (newZoomFactor - gMap.zoomFactor);
 
               if (gPinchStartWidth < curPinchStartWidth)
                 zoomIn();
@@ -811,26 +727,28 @@ var mapEvHandler = {
           // If we are in a pinch, do not drag.
           break;
         }
-        var x = coordObj.clientX - gMapCanvas.offsetLeft;
-        var y = coordObj.clientY - gMapCanvas.offsetTop;
+        var x = coordObj.clientX - gGLMapCanvas.offsetLeft;
+        var y = coordObj.clientY - gGLMapCanvas.offsetTop;
         if (gDragging === true) {
           var dX = x - gLastMouseX;
           var dY = y - gLastMouseY;
           gMap.pos.x -= dX * gMap.zoomFactor;
           gMap.pos.y -= dY * gMap.zoomFactor;
-          if (true) { // use optimized path
+          if (false) { // use optimized path
+            /* TODO: investigate optimized path for GL - code below was 2D.
             var mapData = gMapContext.getImageData(0, 0,
                                                    gMapCanvas.width,
                                                    gMapCanvas.height);
             gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
             gMapContext.putImageData(mapData, dX, dY);
-            drawMap({left: (dX > 0) ? dX : 0,
+            gMap.draw({left: (dX > 0) ? dX : 0,
                      right: (dX < 0) ? -dX : 0,
                      top: (dY > 0) ? dY : 0,
                      bottom: (dY < 0) ? -dY : 0});
+            */
           }
           else {
-            drawMap(false, true);
+            gMap.draw(false, true);
           }
           showUI();
         }
@@ -858,8 +776,8 @@ var mapEvHandler = {
 
         // Debug output: "coordinates" of the point the mouse was over.
         /*
-        var ptCoord = {x: gMap.pos.x + (x - gMapCanvas.width / 2) * gMap.zoomFactor,
-                       y: gMap.pos.y + (x - gMapCanvas.height / 2) * gMap.zoomFactor};
+        var ptCoord = {x: gMap.pos.x + (x - gMap.width / 2) * gMap.zoomFactor,
+                       y: gMap.pos.y + (x - gMap.height / 2) * gMap.zoomFactor};
         var gpsCoord = xy2gps(ptCoord.x, ptCoord.y);
         var pt2Coord = gps2xy(gpsCoord.latitude, gpsCoord.longitude);
         console.log(ptCoord.x + "/" + ptCoord.y + " - " +
@@ -872,13 +790,13 @@ var mapEvHandler = {
           // Calculate new center of the map - same point stays under the mouse.
           // This means that the pixel distance between the old center and point
           // must equal the pixel distance of the new center and that point.
-          var x = coordObj.clientX - gMapCanvas.offsetLeft;
-          var y = coordObj.clientY - gMapCanvas.offsetTop;
+          var x = coordObj.clientX - gGLMapCanvas.offsetLeft;
+          var y = coordObj.clientY - gGLMapCanvas.offsetTop;
 
           // Zoom factor after this action.
           var newZoomFactor = Math.pow(2, gMap.maxZoom - newZoomLevel);
-          gMap.pos.x -= (x - gMapCanvas.width / 2) * (newZoomFactor - gMap.zoomFactor);
-          gMap.pos.y -= (y - gMapCanvas.height / 2) * (newZoomFactor - gMap.zoomFactor);
+          gMap.pos.x -= (x - gMap.width / 2) * (newZoomFactor - gMap.zoomFactor);
+          gMap.pos.y -= (y - gMap.height / 2) * (newZoomFactor - gMap.zoomFactor);
 
           if (aEvent.deltaY < 0)
             zoomIn();
@@ -952,19 +870,21 @@ var mapEvHandler = {
         if (dX || dY) {
           gMap.pos.x -= dX * gMap.zoomFactor;
           gMap.pos.y -= dY * gMap.zoomFactor;
-          if (true) { // use optimized path
+          if (false) { // use optimized path
+            /* TODO: investigate optimized path for GL - code below was 2D.
             var mapData = gMapContext.getImageData(0, 0,
                                                    gMapCanvas.width,
                                                    gMapCanvas.height);
             gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
             gMapContext.putImageData(mapData, dX, dY);
-            drawMap({left: (dX > 0) ? dX : 0,
+            gMap.draw({left: (dX > 0) ? dX : 0,
                      right: (dX < 0) ? -dX : 0,
                      top: (dY > 0) ? dY : 0,
                      bottom: (dY < 0) ? -dY : 0});
+            */
           }
           else {
-            drawMap(false, true);
+            gMap.draw(false, true);
           }
         }
         break;
@@ -1048,11 +968,11 @@ function startTracking() {
           if (gCenterPosition) {
             var posCoord = gps2xy(position.coords.latitude,
                                   position.coords.longitude);
-            if (Math.abs(gMap.pos.x - posCoord.x) > gMapCanvas.width * gMap.zoomFactor / 4 ||
-                Math.abs(gMap.pos.y - posCoord.y) > gMapCanvas.height * gMap.zoomFactor / 4) {
+            if (Math.abs(gMap.pos.x - posCoord.x) > gMap.width * gMap.zoomFactor / 4 ||
+                Math.abs(gMap.pos.y - posCoord.y) > gMap.height * gMap.zoomFactor / 4) {
               gMap.pos.x = posCoord.x;
               gMap.pos.y = posCoord.y;
-              drawMap(); // This draws the current point as well.
+              gMap.draw(); // This draws the current point as well.
               redrawn = true;
             }
           }

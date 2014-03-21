@@ -78,7 +78,7 @@ h1 {
   border-radius: 3px;
 }
 
-#map, #glmap, #track {
+#map, #track {
   position: fixed;
   border: 0;
   top: 0;
@@ -89,10 +89,6 @@ h1 {
 
 #map {
   z-index: 1;
-}
-
-#glmap {
-  z-index: 2;
 }
 
 #track {
