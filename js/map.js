@@ -203,7 +203,6 @@ var gMap = {
   glResolutionAttr: null,
   glMapTexture: null,
   glTextures: {},
-  glTextureKeys: {},
 
   activeMap: "osm_mapnik",
   tileSize: 256,
@@ -292,7 +291,7 @@ var gMap = {
       gMap.gl.enableVertexAttribArray(gMap.glTextureCoordAttr);
       gMap.gl.vertexAttribPointer(gMap.glTextureCoordAttr, 2, gMap.gl.FLOAT, false, 0, 0);
 
-      gMap.loadImageToTexture(gLoadingTile, 0, "loading::0,0,0");
+      gMap.loadImageToTexture(gLoadingTile, getTileKey("loading", {x: 0, y: 0, z: 0}));
 
       gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
 
@@ -335,7 +334,7 @@ var gMap = {
         // Only go to loading step if we haven't loaded the texture.
         var coords = {x: x, y: y, z: gMap.pos.z};
         var tileKey = getTileKey(gMap.activeMap, normalizeCoords(coords));
-        if (!gMap.glTextureKeys[tileKey]) {
+        if (!gMap.glTextures[tileKey]) {
           // Initiate loading/drawing of the actual tile.
           gTileService.get(gMap.activeMap, coords,
                            function(aImage, aStyle, aCoords, aTileKey) {
@@ -345,9 +344,7 @@ var gMap = {
               var imgURL = URL.createObjectURL(aImage);
               var imgObj = new Image();
               imgObj.onload = function() {
-                var txNr = 1;
-                while (gMap.glTextures["tx" + txNr]) { txNr++; }
-                gMap.loadImageToTexture(imgObj, txNr, aTileKey);
+                gMap.loadImageToTexture(imgObj, aTileKey);
                 requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
                 URL.revokeObjectURL(imgURL);
               }
@@ -370,7 +367,6 @@ var gMap = {
     var xMax = gMap.pos.x + wid / 2;
     var yMax = gMap.pos.y + ht / 2;
 
-    var txIndexList = [];
     // Go through all the tiles in the map, find out if to draw them and do so.
     for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
       for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
@@ -378,16 +374,15 @@ var gMap = {
         // and the performance sucks (more than expected).
         var xoff = Math.round((x * size - xMin) / gMap.zoomFactor);
         var yoff = Math.round((y * size - yMin) / gMap.zoomFactor);
-        // Draw the tile, first find out the index of the texture to use.
+        // Draw the tile, first find out the actual texture to use.
         var norm = normalizeCoords({x: x, y: y, z: gMap.pos.z});
         var tileKey = getTileKey(gMap.activeMap, norm);
-        var txIndex = gMap.glTextureKeys[tileKey];
-        if (!txIndex) { txIndex = 0; }
-        txIndexList.push(txIndex);
-        gMap.drawTileGL(xoff, yoff, txIndex);
+        if (!gMap.glTextures[tileKey]) {
+          tileKey = getTileKey("loading", {x: 0, y: 0, z: 0});
+        }
+        gMap.drawTileGL(xoff, yoff, tileKey);
       }
     }
-    console.log("Used Indexes: " + txIndexList.join(","));
   },
 
   resizeAndDraw: function() {
@@ -411,9 +406,9 @@ var gMap = {
     }
   },
 
-  drawTileGL: function(aLeft, aRight, aTextureIndex) {
+  drawTileGL: function(aLeft, aRight, aTileKey) {
     gMap.gl.activeTexture(gMap.gl.TEXTURE0);
-    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures["tx" + aTextureIndex]);
+    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTileKey]);
     // Set uImage to refer to TEXTURE0
     gMap.gl.uniform1i(gMap.gl.getUniformLocation(gMap.glShaderProgram, "uImage"), 0);
     var x_start = aLeft;
@@ -434,12 +429,11 @@ var gMap = {
     gMap.gl.drawArrays(gMap.gl.TRIANGLES, 0, 6);
   },
 
-  loadImageToTexture: function(aImage, aTextureIndex, aTileKey) {
+  loadImageToTexture: function(aImage, aTileKey) {
     // TODO: Get rid of old textures.
-    gMap.glTextureKeys[aTileKey] = aTextureIndex;
     // Create and bind texture.
-    gMap.glTextures["tx" + aTextureIndex] = gMap.gl.createTexture();
-    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures["tx" + aTextureIndex]);
+    gMap.glTextures[aTileKey] = gMap.gl.createTexture();
+    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTileKey]);
     // Set params for how the texture minifies and magnifies (wrap params are not needed as we're power-of-two).
     gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MIN_FILTER, gMap.gl.NEAREST);
     gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MAG_FILTER, gMap.gl.NEAREST);
