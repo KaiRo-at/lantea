@@ -307,18 +307,13 @@ var gMap = {
     gAction.dispatchEvent(throwEv);
   },
 
-  draw: function(aPixels, aOverdraw) {
-    gMap.assembleGL(aPixels);
+  draw: function() {
+    gMap.assembleGL();
     drawTrack();
   },
 
-  assembleGL: function(aPixels) {
+  assembleGL: function() {
     if (!gMap.gl) { return; }
-    // aPixels is an object with left/right/top/bottom members telling how many
-    //   pixels on the borders should actually be drawn.
-    if (!aPixels)
-      aPixels = {left: gMap.gl.drawingBufferWidth, right: gMap.gl.drawingBufferWidth,
-                 top: gMap.gl.drawingBufferHeight, bottom: gMap.gl.drawingBufferHeight};
 
     document.getElementById("zoomLevel").textContent = gMap.pos.z;
     gMap.zoomFactor = Math.pow(2, gMap.maxZoom - gMap.pos.z);
@@ -334,40 +329,29 @@ var gMap = {
     if (gMapPrefsLoaded && mainDB)
       gPrefs.set("position", gMap.pos);
 
-    var tiles = {left: Math.ceil((xMin + aPixels.left * gMap.zoomFactor) / size) -
-                                 (aPixels.left ? 0 : 1),
-                 right: Math.floor((xMax - aPixels.right * gMap.zoomFactor) / size) -
-                                   (aPixels.right ? 1 : 0),
-                 top: Math.ceil((yMin + aPixels.top * gMap.zoomFactor) / size) -
-                                (aPixels.top ? 0 : 1),
-                 bottom: Math.floor((yMax - aPixels.bottom * gMap.zoomFactor) / size) -
-                                    (aPixels.bottom ? 1 : 0)};
-
     // Go through all the tiles in the map, find out if to draw them and do so.
     for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
       for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
-        // Only go to loading step if we need to fetch the image for this tile.
-        if (x < tiles.left || x > tiles.right ||
-            y < tiles.top || y > tiles.bottom) {
+        // Only go to loading step if we haven't loaded the texture.
+        var coords = {x: x, y: y, z: gMap.pos.z};
+        var tileKey = getTileKey(gMap.activeMap, normalizeCoords(coords));
+        if (!gMap.glTextureKeys[tileKey]) {
           // Initiate loading/drawing of the actual tile.
-          gTileService.get(gMap.activeMap, {x: x, y: y, z: gMap.pos.z},
+          gTileService.get(gMap.activeMap, coords,
                            function(aImage, aStyle, aCoords, aTileKey) {
-            // Only load if this applies for the current view.
+            // Only actually load if this still applies for the current view.
             if ((aStyle == gMap.activeMap) && (aCoords.z == gMap.pos.z)) {
-              var txIndex = gMap.glTextureKeys[aTileKey];
-              if (!txIndex) {
-                var URL = window.URL;
-                var imgURL = URL.createObjectURL(aImage);
-                var imgObj = new Image();
-                imgObj.onload = function() {
-                  var txNr = 1;
-                  while (gMap.glTextures["tx" + txNr]) { txNr++; }
-                  gMap.loadImageToTexture(imgObj, txNr, aTileKey);
-                  requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
-                  URL.revokeObjectURL(imgURL);
-                }
-                imgObj.src = imgURL;
+              var URL = window.URL;
+              var imgURL = URL.createObjectURL(aImage);
+              var imgObj = new Image();
+              imgObj.onload = function() {
+                var txNr = 1;
+                while (gMap.glTextures["tx" + txNr]) { txNr++; }
+                gMap.loadImageToTexture(imgObj, txNr, aTileKey);
+                requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+                URL.revokeObjectURL(imgURL);
               }
+              imgObj.src = imgURL;
             }
           });
         }
@@ -754,22 +738,7 @@ var mapEvHandler = {
           var dY = y - gLastMouseY;
           gMap.pos.x -= dX * gMap.zoomFactor;
           gMap.pos.y -= dY * gMap.zoomFactor;
-          if (false) { // use optimized path
-            /* TODO: investigate optimized path for GL - code below was 2D.
-            var mapData = gMapContext.getImageData(0, 0,
-                                                   gMapCanvas.width,
-                                                   gMapCanvas.height);
-            gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
-            gMapContext.putImageData(mapData, dX, dY);
-            gMap.draw({left: (dX > 0) ? dX : 0,
-                     right: (dX < 0) ? -dX : 0,
-                     top: (dY > 0) ? dY : 0,
-                     bottom: (dY < 0) ? -dY : 0});
-            */
-          }
-          else {
-            gMap.draw(false, true);
-          }
+          gMap.draw();
           showUI();
         }
         gLastMouseX = x;
@@ -890,22 +859,7 @@ var mapEvHandler = {
         if (dX || dY) {
           gMap.pos.x -= dX * gMap.zoomFactor;
           gMap.pos.y -= dY * gMap.zoomFactor;
-          if (false) { // use optimized path
-            /* TODO: investigate optimized path for GL - code below was 2D.
-            var mapData = gMapContext.getImageData(0, 0,
-                                                   gMapCanvas.width,
-                                                   gMapCanvas.height);
-            gMapContext.clearRect(0, 0, gMapCanvas.width, gMapCanvas.height);
-            gMapContext.putImageData(mapData, dX, dY);
-            gMap.draw({left: (dX > 0) ? dX : 0,
-                     right: (dX < 0) ? -dX : 0,
-                     top: (dY > 0) ? dY : 0,
-                     bottom: (dY < 0) ? -dY : 0});
-            */
-          }
-          else {
-            gMap.draw(false, true);
-          }
+          gMap.draw();
         }
         break;
     }
