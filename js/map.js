@@ -308,22 +308,17 @@ var gMap = {
   },
 
   draw: function(aPixels, aOverdraw) {
-    gMap.drawGL(aPixels, aOverdraw);
+    gMap.assembleGL(aPixels);
     drawTrack();
   },
 
-  drawGL: function(aPixels, aOverdraw) {
+  assembleGL: function(aPixels) {
     if (!gMap.gl) { return; }
     // aPixels is an object with left/right/top/bottom members telling how many
     //   pixels on the borders should actually be drawn.
-    // aOverdraw is a bool that tells if we should draw placeholders or draw
-    //   straight over the existing content.
-    // XXX: Both those optimizations are OFF for GL right now!
-    //if (!aPixels)
+    if (!aPixels)
       aPixels = {left: gMap.gl.drawingBufferWidth, right: gMap.gl.drawingBufferWidth,
                  top: gMap.gl.drawingBufferHeight, bottom: gMap.gl.drawingBufferHeight};
-    if (!aOverdraw)
-      aOverdraw = false;
 
     document.getElementById("zoomLevel").textContent = gMap.pos.z;
     gMap.zoomFactor = Math.pow(2, gMap.maxZoom - gMap.pos.z);
@@ -351,47 +346,64 @@ var gMap = {
     // Go through all the tiles in the map, find out if to draw them and do so.
     for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
       for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
-        // Only go to the drawing step if we need to draw this tile.
+        // Only go to loading step if we need to fetch the image for this tile.
         if (x < tiles.left || x > tiles.right ||
             y < tiles.top || y > tiles.bottom) {
-          // Round here is **CRUCIAL** otherwise the images are filtered
-          // and the performance sucks (more than expected).
-          var xoff = Math.round((x * size - xMin) / gMap.zoomFactor);
-          var yoff = Math.round((y * size - yMin) / gMap.zoomFactor);
-          // Draw placeholder tile unless we overdraw.
-          if (!aOverdraw &&
-              (x < tiles.left -1  || x > tiles.right + 1 ||
-              y < tiles.top -1 || y > tiles.bottom + 1)) {
-            gMap.drawTileGL(xoff, yoff, 0);
-          }
           // Initiate loading/drawing of the actual tile.
           gTileService.get(gMap.activeMap, {x: x, y: y, z: gMap.pos.z},
-                          function(aImage, aStyle, aCoords, aTileKey) {
-            // Only draw if this applies for the current view.
+                           function(aImage, aStyle, aCoords, aTileKey) {
+            // Only load if this applies for the current view.
             if ((aStyle == gMap.activeMap) && (aCoords.z == gMap.pos.z)) {
-              var ixMin = gMap.pos.x - wid / 2;
-              var iyMin = gMap.pos.y - ht / 2;
-              var ixoff = Math.round((aCoords.x * size - ixMin) / gMap.zoomFactor);
-              var iyoff = Math.round((aCoords.y * size - iyMin) / gMap.zoomFactor);
-              var URL = window.URL;
-              var imgURL = URL.createObjectURL(aImage);
-              var imgObj = new Image();
-              imgObj.src = imgURL;
-              imgObj.onload = function() {
-                // TODO: Do actually paint in a separate function, called on requestAnimationFrame.
-                var txIndex = gMap.glTextureKeys[aTileKey];
-                if (!txIndex) {
-                  txIndex = Object.keys(gMap.glTextureKeys).length;
-                  gMap.loadImageToTexture(imgObj, txIndex, aTileKey);
+              var txIndex = gMap.glTextureKeys[aTileKey];
+              if (!txIndex) {
+                var URL = window.URL;
+                var imgURL = URL.createObjectURL(aImage);
+                var imgObj = new Image();
+                imgObj.onload = function() {
+                  var txNr = 1;
+                  while (gMap.glTextures["tx" + txNr]) { txNr++; }
+                  gMap.loadImageToTexture(imgObj, txNr, aTileKey);
+                  requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+                  URL.revokeObjectURL(imgURL);
                 }
-                gMap.drawTileGL(ixoff, iyoff, txIndex);
-                URL.revokeObjectURL(imgURL);
+                imgObj.src = imgURL;
               }
             }
           });
         }
       }
     }
+    requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+  },
+
+  drawGL: function() {
+    var wid = gMap.gl.drawingBufferWidth * gMap.zoomFactor; // Width in level 18 pixels.
+    var ht = gMap.gl.drawingBufferHeight * gMap.zoomFactor; // Height in level 18 pixels.
+    var size = gMap.tileSize * gMap.zoomFactor; // Tile size in level 18 pixels.
+
+    var xMin = gMap.pos.x - wid / 2; // Corners of the window in level 18 pixels.
+    var yMin = gMap.pos.y - ht / 2;
+    var xMax = gMap.pos.x + wid / 2;
+    var yMax = gMap.pos.y + ht / 2;
+
+    var txIndexList = [];
+    // Go through all the tiles in the map, find out if to draw them and do so.
+    for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
+      for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
+        // Round here is **CRUCIAL** otherwise the images are filtered
+        // and the performance sucks (more than expected).
+        var xoff = Math.round((x * size - xMin) / gMap.zoomFactor);
+        var yoff = Math.round((y * size - yMin) / gMap.zoomFactor);
+        // Draw the tile, first find out the index of the texture to use.
+        var norm = normalizeCoords({x: x, y: y, z: gMap.pos.z});
+        var tileKey = getTileKey(gMap.activeMap, norm);
+        var txIndex = gMap.glTextureKeys[tileKey];
+        if (!txIndex) { txIndex = 0; }
+        txIndexList.push(txIndex);
+        gMap.drawTileGL(xoff, yoff, txIndex);
+      }
+    }
+    console.log("Used Indexes: " + txIndexList.join(","));
   },
 
   resizeAndDraw: function() {
@@ -416,8 +428,10 @@ var gMap = {
   },
 
   drawTileGL: function(aLeft, aRight, aTextureIndex) {
-    gMap.gl.activeTexture(gMap.gl.TEXTURE0 + aTextureIndex);
-    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTextureIndex]);
+    gMap.gl.activeTexture(gMap.gl.TEXTURE0);
+    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures["tx" + aTextureIndex]);
+    // Set uImage to refer to TEXTURE0
+    gMap.gl.uniform1i(gMap.gl.getUniformLocation(gMap.glShaderProgram, "uImage"), 0);
     var x_start = aLeft;
     var i_width = gMap.tileSize;
     var y_start = aRight;
@@ -437,12 +451,11 @@ var gMap = {
   },
 
   loadImageToTexture: function(aImage, aTextureIndex, aTileKey) {
+    // TODO: Get rid of old textures.
     gMap.glTextureKeys[aTileKey] = aTextureIndex;
     // Create and bind texture.
-    gMap.glTextures[aTextureIndex] = gMap.gl.createTexture();
-    gMap.gl.activeTexture(gMap.gl.TEXTURE0 + aTextureIndex);
-    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTextureIndex]);
-    gMap.gl.uniform1i(gMap.gl.getUniformLocation(gMap.glShaderProgram, "uImage"), 0);
+    gMap.glTextures["tx" + aTextureIndex] = gMap.gl.createTexture();
+    gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures["tx" + aTextureIndex]);
     // Set params for how the texture minifies and magnifies (wrap params are not needed as we're power-of-two).
     gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MIN_FILTER, gMap.gl.NEAREST);
     gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MAG_FILTER, gMap.gl.NEAREST);
@@ -516,6 +529,13 @@ function normalizeCoords(aCoords) {
   return {x: mod(aCoords.x, zoomFactor),
           y: mod(aCoords.y, zoomFactor),
           z: aCoords.z};
+}
+
+function getTileKey(aStyle, aNormalizedCoords) {
+  return aStyle + "::" +
+         aNormalizedCoords.x + "," +
+         aNormalizedCoords.y + "," +
+         aNormalizedCoords.z;
 }
 
 // Returns true if the tile is outside the current view.
@@ -1016,7 +1036,7 @@ var gTileService = {
 
   get: function(aStyle, aCoords, aCallback) {
     var norm = normalizeCoords(aCoords);
-    var dbkey = aStyle + "::" + norm.x + "," + norm.y + "," + norm.z;
+    var dbkey = getTileKey(aStyle, norm);
     this.getDBCache(dbkey, function(aResult, aEvent) {
       if (aResult) {
         // We did get a cached object.
