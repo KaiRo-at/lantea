@@ -2,16 +2,16 @@ Tasks to complete for Lantea Maps:
 
 Required:
 
-* Switch map to (2D) WebGL to improve panning performance
 * Improve tile cache:
 ** If cached tiles have changed, possibly also try (async) updates of other cached zoom levels covering this area
 ** Pre-cache tiles in adjacent areas and possibly zoom levels
+* Improve texture cleaning algorithm
 * Show a notification when we are loading tiles or saved data
 * Display length and duration of track
 * Display movement speed
 * Display location accuracy
 * Show a better visible marker for the current location, possibly also indicating movement direction/speed
-* Smooth animations for zooming, probably using some canvas magic
+* Smooth animations for zooming, probably using some WebGL magic
 * Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
 * Better GPX saving implementation [blocked by missing web APIs]
 ** Set file name to save into to a good default (date + maybe some location name)
