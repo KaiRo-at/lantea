@@ -203,6 +203,8 @@ var gMap = {
   glResolutionAttr: null,
   glMapTexture: null,
   glTextures: {},
+  glTxCleanIntervalID: null,
+  glTexturesPerZoomLevel: 0,
 
   activeMap: "osm_mapnik",
   tileSize: 256,
@@ -212,6 +214,11 @@ var gMap = {
     x: 35630000.0, // Current position in the map in pixels at the maximum zoom level (18)
     y: 23670000.0, // The range is 0-67108864 (2^gMap.maxZoom * gMap.tileSize)
     z: 5           // This could be fractional if supported being between zoom levels.
+  },
+  baseDim: { // Map width, height and tile size in level 18 pixels.
+    wid: null,
+    ht: null,
+    tsize: null,
   },
 
   get width() { return gMap.gl ? gMap.gl.drawingBufferWidth : gGLMapCanvas.width; },
@@ -300,6 +307,9 @@ var gMap = {
       gMap.gl.bindBuffer(gMap.gl.ARRAY_BUFFER, mapVerticesTextureCoordBuffer);
       gMap.gl.enableVertexAttribArray(gMap.glVertexPositionAttr);
       gMap.gl.vertexAttribPointer(gMap.glVertexPositionAttr, 2, gMap.gl.FLOAT, false, 0, 0);
+
+      // Call texture cleaning every 30 seconds, for now (is 60 better?).
+      gMap.glTxCleanIntervalID = window.setInterval(gMap.cleanTextures, 30 * 1000);
     }
 
     var throwEv = new CustomEvent("mapinit-done");
@@ -316,21 +326,21 @@ var gMap = {
 
     document.getElementById("zoomLevel").textContent = gMap.pos.z;
     gMap.zoomFactor = Math.pow(2, gMap.maxZoom - gMap.pos.z);
-    var wid = gMap.gl.drawingBufferWidth * gMap.zoomFactor; // Width in level 18 pixels.
-    var ht = gMap.gl.drawingBufferHeight * gMap.zoomFactor; // Height in level 18 pixels.
-    var size = gMap.tileSize * gMap.zoomFactor; // Tile size in level 18 pixels.
+    gMap.baseDim.wid = gMap.gl.drawingBufferWidth * gMap.zoomFactor;
+    gMap.baseDim.ht = gMap.gl.drawingBufferHeight * gMap.zoomFactor;
+    gMap.baseDim.tsize = gMap.tileSize * gMap.zoomFactor;
 
-    var xMin = gMap.pos.x - wid / 2; // Corners of the window in level 18 pixels.
-    var yMin = gMap.pos.y - ht / 2;
-    var xMax = gMap.pos.x + wid / 2;
-    var yMax = gMap.pos.y + ht / 2;
+    var xMin = gMap.pos.x - gMap.baseDim.wid / 2; // Corners of the window in level 18 pixels.
+    var yMin = gMap.pos.y - gMap.baseDim.ht / 2;
+    var xMax = gMap.pos.x + gMap.baseDim.wid / 2;
+    var yMax = gMap.pos.y + gMap.baseDim.ht / 2;
 
     if (gMapPrefsLoaded && mainDB)
       gPrefs.set("position", gMap.pos);
 
     // Go through all the tiles in the map, find out if to draw them and do so.
-    for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
-      for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
+    for (var x = Math.floor(xMin / gMap.baseDim.tsize); x < Math.ceil(xMax / gMap.baseDim.tsize); x++) {
+      for (var y = Math.floor(yMin / gMap.baseDim.tsize); y < Math.ceil(yMax / gMap.baseDim.tsize); y++) {
         // Only go to loading step if we haven't loaded the texture.
         var coords = {x: x, y: y, z: gMap.pos.z};
         var tileKey = getTileKey(gMap.activeMap, normalizeCoords(coords));
@@ -358,22 +368,17 @@ var gMap = {
   },
 
   drawGL: function() {
-    var wid = gMap.gl.drawingBufferWidth * gMap.zoomFactor; // Width in level 18 pixels.
-    var ht = gMap.gl.drawingBufferHeight * gMap.zoomFactor; // Height in level 18 pixels.
-    var size = gMap.tileSize * gMap.zoomFactor; // Tile size in level 18 pixels.
-
-    var xMin = gMap.pos.x - wid / 2; // Corners of the window in level 18 pixels.
-    var yMin = gMap.pos.y - ht / 2;
-    var xMax = gMap.pos.x + wid / 2;
-    var yMax = gMap.pos.y + ht / 2;
+    var xMin = gMap.pos.x - gMap.baseDim.wid / 2; // Corners of the window in level 18 pixels.
+    var yMin = gMap.pos.y - gMap.baseDim.ht / 2;
+    var xMax = gMap.pos.x + gMap.baseDim.wid / 2;
+    var yMax = gMap.pos.y + gMap.baseDim.ht / 2;
 
     // Go through all the tiles in the map, find out if to draw them and do so.
-    for (var x = Math.floor(xMin / size); x < Math.ceil(xMax / size); x++) {
-      for (var y = Math.floor(yMin / size); y < Math.ceil(yMax / size); y++) { // slow script warnings on the tablet appear here!
-        // Round here is **CRUCIAL** otherwise the images are filtered
-        // and the performance sucks (more than expected).
-        var xoff = Math.round((x * size - xMin) / gMap.zoomFactor);
-        var yoff = Math.round((y * size - yMin) / gMap.zoomFactor);
+    for (var x = Math.floor(xMin / gMap.baseDim.tsize); x < Math.ceil(xMax / gMap.baseDim.tsize); x++) {
+      for (var y = Math.floor(yMin / gMap.baseDim.tsize); y < Math.ceil(yMax / gMap.baseDim.tsize); y++) {
+        // Rounding the pixel offsets ensures we position the tiles precisely.
+        var xoff = Math.round((x * gMap.baseDim.tsize - xMin) / gMap.zoomFactor);
+        var yoff = Math.round((y * gMap.baseDim.tsize - yMin) / gMap.zoomFactor);
         // Draw the tile, first find out the actual texture to use.
         var norm = normalizeCoords({x: x, y: y, z: gMap.pos.z});
         var tileKey = getTileKey(gMap.activeMap, norm);
@@ -400,6 +405,8 @@ var gMap = {
         gMap.gl.clear(gMap.gl.COLOR_BUFFER_BIT);
         // Make sure the vertex shader get the right resolution.
         gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
+        // Prepare recalculation of textures to keep for one zoom level.
+        gMap.glTexturesPerZoomLevel = 0;
       }
       gMap.draw();
       showUI();
@@ -430,7 +437,6 @@ var gMap = {
   },
 
   loadImageToTexture: function(aImage, aTileKey) {
-    // TODO: Get rid of old textures.
     // Create and bind texture.
     gMap.glTextures[aTileKey] = gMap.gl.createTexture();
     gMap.gl.bindTexture(gMap.gl.TEXTURE_2D, gMap.glTextures[aTileKey]);
@@ -439,6 +445,66 @@ var gMap = {
     gMap.gl.texParameteri(gMap.gl.TEXTURE_2D, gMap.gl.TEXTURE_MAG_FILTER, gMap.gl.NEAREST);
     // Upload the image into the texture.
     gMap.gl.texImage2D(gMap.gl.TEXTURE_2D, 0, gMap.gl.RGBA, gMap.gl.RGBA, gMap.gl.UNSIGNED_BYTE, aImage);
+  },
+
+  cleanTextures: function() {
+    // Get rid of unneeded textures to save memory.
+    // TODO: Be less aggressive, maybe keep neighboring zoom levels (but x/y coords there are zoom-specific).
+    if (!gMap.glTexturesPerZoomLevel) {
+      // Calculate how many textures we need to keep for one zoom level.
+      // ceil(width/size) gives us the minimum, keep one on either side as well.
+      gMap.glTexturesPerZoomLevel =
+        Math.ceil(gMap.gl.drawingBufferWidth / gMap.tileSize + 2) *
+        Math.ceil(gMap.gl.drawingBufferHeight / gMap.tileSize + 2);
+      console.log("Keeping " + gMap.glTexturesPerZoomLevel + " textures per level");
+    }
+    if (Object.keys(gMap.glTextures).length > gMap.glTexturesPerZoomLevel) {
+      console.log("Cleaning textures... (have " + Object.keys(gMap.glTextures).length + " atm)");
+
+      // Find coordinate ranges for tiles to keep.
+      var tMin = normalizeCoords({x: Math.floor((gMap.pos.x - gMap.baseDim.wid / 2) / gMap.baseDim.tsize) - 1,
+                                  y: Math.floor((gMap.pos.y - gMap.baseDim.ht / 2) / gMap.baseDim.tsize) - 1,
+                                  z: gMap.pos.z});
+      var tMax = normalizeCoords({x: Math.ceil((gMap.pos.x + gMap.baseDim.wid / 2) / gMap.baseDim.tsize) + 1,
+                                  y: Math.ceil((gMap.pos.y + gMap.baseDim.ht / 2) / gMap.baseDim.tsize) + 1,
+                                  z: gMap.pos.z});
+      console.log("In range: " + tMin.x + "," + tMin.y + "," + tMin.z + " - " + tMax.x + "," + tMax.y + "," + tMax.z);
+      for (aTileKey in gMap.glTextures) {
+        var keyMatches = aTileKey.match(/([^:]+)::(\d+),(\d+),(\d+)/);
+        if (keyMatches && keyMatches[1] != "loading") {
+          var txData = {
+            style: keyMatches[1],
+            x: keyMatches[2],
+            y: keyMatches[3],
+            z: keyMatches[4],
+          }
+          var delTx = false;
+          if (txData.style != gMap.activeMap) { delTx = true; console.log("Different map style: " + txData.style); }
+          if (!delTx && (txData.z < tMin.z || txData.z > tMax.z)) { delTx = true; console.log("Out-of-range zoom: " + txData.z); }
+          if (tMin.x < tMax.x) {
+            if (!delTx && (txData.x < tMin.x || txData.x > tMax.x)) { delTx = true; console.log("Out-of-range X: " + txData.x); }
+          }
+          else {
+            // We are crossing over the 0 coordinate!
+            if (!delTx && (txData.x < tMin.x && txData.x > tMax.x)) { delTx = true; console.log("Out-of-range X: " + txData.x); }
+          }
+          if (tMin.y < tMax.y) {
+            if (!delTx && (txData.y < tMin.y || txData.y > tMax.y)) { delTx = true; console.log("Out-of-range Y: " + txData.y); }
+          }
+          else {
+            // We are crossing over the 0 coordinate!
+            if (!delTx && (txData.y < tMin.y && txData.y > tMax.y)) { delTx = true; console.log("Out-of-range Y: " + txData.y); }
+          }
+          if (delTx) {
+            // Delete texture from GL and from the array we are holding.
+            gMap.gl.deleteTexture(gMap.glTextures[aTileKey]);
+            delete gMap.glTextures[aTileKey];
+          }
+        }
+      }
+      console.log("Cleaning complete, " + Object.keys(gMap.glTextures).length + " textures left)");
+      //clearInterval(gMap.glTxCleanIntervalID);
+    }
   },
 }
 
