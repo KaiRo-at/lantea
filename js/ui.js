@@ -2,10 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Get the best-available indexedDB object.
+// Get the best-available objects for indexedDB and requestAnimationFrame.
 window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
-var mainDB;
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
+var mainDB;
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gAction, gActionLabel;
