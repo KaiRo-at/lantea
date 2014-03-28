@@ -355,7 +355,7 @@ var gMap = {
               var imgObj = new Image();
               imgObj.onload = function() {
                 gMap.loadImageToTexture(imgObj, aTileKey);
-                requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+                window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
                 URL.revokeObjectURL(imgURL);
               }
               imgObj.src = imgURL;
@@ -364,7 +364,7 @@ var gMap = {
         }
       }
     }
-    requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+    window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
   },
 
   drawGL: function() {
