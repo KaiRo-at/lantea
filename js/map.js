@@ -478,8 +478,8 @@ var gMap = {
                                   y: Math.ceil((gMap.pos.y + gMap.baseDim.ht / 2) / gMap.baseDim.tsize) + 1,
                                   z: gMap.pos.z});
       console.log("In range: " + tMin.x + "," + tMin.y + "," + tMin.z + " - " + tMax.x + "," + tMax.y + "," + tMax.z);
-      for (aTileKey in gMap.glTextures) {
-        var keyMatches = aTileKey.match(/([^:]+)::(\d+),(\d+),(\d+)/);
+      for (var tileKey in gMap.glTextures) {
+        var keyMatches = tileKey.match(/([^:]+)::(\d+),(\d+),(\d+)/);
         if (keyMatches && keyMatches[1] != "loading") {
           var txData = {
             style: keyMatches[1],
@@ -506,8 +506,8 @@ var gMap = {
           }
           if (delTx) {
             // Delete texture from GL and from the array we are holding.
-            gMap.gl.deleteTexture(gMap.glTextures[aTileKey]);
-            delete gMap.glTextures[aTileKey];
+            gMap.gl.deleteTexture(gMap.glTextures[tileKey]);
+            delete gMap.glTextures[tileKey];
           }
         }
       }
