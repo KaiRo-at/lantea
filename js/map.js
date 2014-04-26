@@ -121,12 +121,14 @@ function loadPrefs(aEvent) {
 
       document.getElementById("body").addEventListener("keydown", mapEvHandler, false);
 
+      console.log("Events added.");
       document.getElementById("copyright").innerHTML =
           gMapStyles[gMap.activeMap].copyright;
 
       gLoadingTile = new Image();
       gLoadingTile.src = "style/loading.png";
       gLoadingTile.onload = function() {
+        console.log("Loading Tile loaded.");
         var throwEv = new CustomEvent("prefload-done");
         gAction.dispatchEvent(throwEv);
       };
@@ -235,7 +237,7 @@ var gMap = {
     '  gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);\n' +
     '  vTextureCoord = aTextureCoord;\n' +
     '}'; },
-  getFragShaderSource:function() {
+  getFragShaderSource: function() {
     return 'varying highp vec2 vTextureCoord;\n\n' +
     'uniform sampler2D uImage;\n\n' +
     'void main(void) {\n' +
