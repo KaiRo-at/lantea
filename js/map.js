@@ -244,12 +244,14 @@ var gMap = {
 
   initGL: function() {
     // When called from the event listener, the "this" reference doesn't work, so use the object name.
+    console.log("Initializing WebGL...");
     if (gMap.gl) {
       gMap.gl.viewport(0, 0, gMap.gl.drawingBufferWidth, gMap.gl.drawingBufferHeight);
       gMap.gl.clearColor(0.0, 0.0, 0.0, 0.5);                          // Set clear color to black, fully opaque.
       gMap.gl.clear(gMap.gl.COLOR_BUFFER_BIT|gMap.gl.DEPTH_BUFFER_BIT);  // Clear the color.
 
       // Create and initialize the shaders.
+      console.log("Create and compile shaders...");
       var vertShader = gMap.gl.createShader(gMap.gl.VERTEX_SHADER);
       var fragShader = gMap.gl.createShader(gMap.gl.FRAGMENT_SHADER);
       gMap.gl.shaderSource(vertShader, gMap.getVertShaderSource());
@@ -269,6 +271,7 @@ var gMap = {
         return null;
       }
 
+      console.log("Create and link shader program...");
       gMap.glShaderProgram = gMap.gl.createProgram();
       gMap.gl.attachShader(gMap.glShaderProgram, vertShader);
       gMap.gl.attachShader(gMap.glShaderProgram, fragShader);
@@ -283,6 +286,7 @@ var gMap = {
       gMap.glTextureCoordAttr = gMap.gl.getAttribLocation(gMap.glShaderProgram, "aTextureCoord");
       gMap.glResolutionAttr = gMap.gl.getUniformLocation(gMap.glShaderProgram, "uResolution");
 
+      console.log("Set up vertex buffer...");
       var tileVerticesBuffer = gMap.gl.createBuffer();
       gMap.gl.bindBuffer(gMap.gl.ARRAY_BUFFER, tileVerticesBuffer);
       // The vertices are the coordinates of the corner points of the square.
@@ -303,6 +307,7 @@ var gMap = {
       gMap.gl.uniform2f(gMap.glResolutionAttr, gGLMapCanvas.width, gGLMapCanvas.height);
 
       // Create a buffer for the position of the rectangle corners.
+      console.log("Set up coord buffer...");
       var mapVerticesTextureCoordBuffer = gMap.gl.createBuffer();
       gMap.gl.bindBuffer(gMap.gl.ARRAY_BUFFER, mapVerticesTextureCoordBuffer);
       gMap.gl.enableVertexAttribArray(gMap.glVertexPositionAttr);
