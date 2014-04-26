@@ -125,13 +125,15 @@ function loadPrefs(aEvent) {
       document.getElementById("copyright").innerHTML =
           gMapStyles[gMap.activeMap].copyright;
 
+      console.log("Init loading tile...");
       gLoadingTile = new Image();
-      gLoadingTile.src = "style/loading.png";
       gLoadingTile.onload = function() {
-        console.log("Loading Tile loaded.");
+        console.log("Loading tile loaded.");
         var throwEv = new CustomEvent("prefload-done");
         gAction.dispatchEvent(throwEv);
       };
+      console.log("Set loading tile...");
+      gLoadingTile.src = "style/loading.png";
     }
   }
   else {
