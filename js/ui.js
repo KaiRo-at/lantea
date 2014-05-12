@@ -66,7 +66,8 @@ function postInit(aEvent) {
   gAction.removeEventListener(aEvent.type, postInit, false);
   console.log("init done, draw map.");
   gMapPrefsLoaded = true;
-  gMap.resizeAndDraw();
+  //gMap.resizeAndDraw();  <-- HACK: This triggers bug 1001853, work around with a delay.
+  window.setTimeout(gMap.resizeAndDraw, 100);
   gActionLabel.textContent = "";
   gAction.style.display = "none";
   setTracking(document.getElementById("trackCheckbox"));
