@@ -1,6 +1,7 @@
 CACHE MANIFEST
 
-# 2014-05-12
+# 2014-06-29
+index.html
 manifest.webapp
 js/map.js
 js/ui.js

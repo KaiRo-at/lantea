@@ -72,10 +72,18 @@ function initMap() {
               gGLMapCanvas.getContext("experimental-webgl", {depth: false});
   }
   catch(e) {}
-  // If we don't have a GL context, give up now
   if (!gMap.gl) {
+    // If we don't have a GL context, give up now
     showGLWarningDialog();
     gMap.gl = null;
+  }
+  else {
+    // GL context can be lost at any time, handle that.
+    // See http://www.khronos.org/webgl/wiki/HandlingContextLost
+    gGLMapCanvas.addEventListener("webglcontextlost",
+                                  gMap.handleContextLost, false);
+    gGLMapCanvas.addEventListener("webglcontextrestored",
+                                  gMap.handleContextRestored, false);
   }
   gTrackCanvas = document.getElementById("track");
   gTrackContext = gTrackCanvas.getContext("2d");
@@ -235,7 +243,7 @@ var gMap = {
     '  gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);\n' +
     '  vTextureCoord = aTextureCoord;\n' +
     '}'; },
-  getFragShaderSource:function() {
+  getFragShaderSource: function() {
     return 'varying highp vec2 vTextureCoord;\n\n' +
     'uniform sampler2D uImage;\n\n' +
     'void main(void) {\n' +
@@ -312,8 +320,13 @@ var gMap = {
       gMap.glTxCleanIntervalID = window.setInterval(gMap.cleanTextures, 30 * 1000);
     }
 
-    var throwEv = new CustomEvent("mapinit-done");
-    gAction.dispatchEvent(throwEv);
+    if (!gAppInitDone) {
+      // We may be called when context was lost and destroyed,
+      // only send event when we are in app startup
+      // (gAppInitDone is set to true right after we return this event).
+      var throwEv = new CustomEvent("mapinit-done");
+      gAction.dispatchEvent(throwEv);
+    }
   },
 
   draw: function() {
@@ -503,8 +516,20 @@ var gMap = {
         }
       }
       console.log("Cleaning complete, " + Object.keys(gMap.glTextures).length + " textures left)");
-      //clearInterval(gMap.glTxCleanIntervalID);
     }
+  },
+
+  handleContextLost: function(event) {
+    event.preventDefault();
+    // GL context is gone, let's reset everything that depends on it.
+    clearInterval(gMap.glTxCleanIntervalID);
+    gMap.glTextures = {};
+  },
+
+  handleContextRestored: function(event) {
+    // When GL context is back, init GL again and draw.
+    gMap.initGL();
+    gMap.draw();
   },
 }
 
