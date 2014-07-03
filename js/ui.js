@@ -7,6 +7,7 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
 window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
 var mainDB;
+var gAppInitDone = false;
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gAction, gActionLabel;
@@ -66,6 +67,7 @@ function postInit(aEvent) {
   gAction.removeEventListener(aEvent.type, postInit, false);
   console.log("init done, draw map.");
   gMapPrefsLoaded = true;
+  gAppInitDone = true;
   //gMap.resizeAndDraw();  <-- HACK: This triggers bug 1001853, work around with a delay.
   window.setTimeout(gMap.resizeAndDraw, 100);
   gActionLabel.textContent = "";
