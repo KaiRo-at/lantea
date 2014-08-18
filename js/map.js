@@ -1103,8 +1103,8 @@ var gTileService = {
                   .replace("{x}", norm.x)
                   .replace("{y}", norm.y)
                   .replace("{z}", norm.z)
-                  .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 2)))
-                  .replace("[1-4]", 1 + Math.floor(Math.random() * 3)),
+                  .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 3)))
+                  .replace("[1-4]", 1 + Math.floor(Math.random() * 4)),
                 true);
       XHR.responseType = "blob";
       XHR.addEventListener("load", function () {
