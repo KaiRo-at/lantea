@@ -129,6 +129,8 @@ function loadPrefs(aEvent) {
 
       document.getElementById("body").addEventListener("keydown", mapEvHandler, false);
 
+      document.addEventListener("visibilitychange", visibilityEvHandler, false);
+
       console.log("Events added.");
       document.getElementById("copyright").innerHTML =
           gMapStyles[gMap.activeMap].copyright;
@@ -377,7 +379,9 @@ var gMap = {
               var imgObj = new Image();
               imgObj.onload = function() {
                 gMap.loadImageToTexture(imgObj, aTileKey);
-                window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+                if (document.hidden != true) { // Only draw if we're actually visible.
+                  window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+                }
                 URL.revokeObjectURL(imgURL);
               }
               imgObj.src = imgURL;
@@ -386,7 +390,9 @@ var gMap = {
         }
       }
     }
-    window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+    if (document.hidden != true) { // Only draw if we're actually visible.
+      window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+    }
   },
 
   drawGL: function() {
@@ -645,13 +651,15 @@ function decodeIndex(encodedIdx) {
 }
 
 function drawTrack() {
-  gLastDrawnPoint = null;
-  gCurPosMapCache = undefined;
-  gTrackContext.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
-  if (gTrack.length) {
-    for (var i = 0; i < gTrack.length; i++) {
-      drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
-                     (i + 1 >= gTrack.length));
+  if (document.hidden != true) { // Only draw if we're actually visible.
+    gLastDrawnPoint = null;
+    gCurPosMapCache = undefined;
+    gTrackContext.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
+    if (gTrack.length) {
+      for (var i = 0; i < gTrack.length; i++) {
+        drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
+                      (i + 1 >= gTrack.length));
+      }
     }
   }
 }
@@ -959,6 +967,15 @@ var mapEvHandler = {
     }
   }
 };
+
+function visibilityEvHandler() {
+  // Immediately draw if we just got visible.
+  if (document.hidden != true) {
+    gMap.draw();
+  }
+  // No need to handle the event where we become invisible as we care only draw
+  // when we are visible anyhow.
+}
 
 var geofake = {
   tracking: false,
