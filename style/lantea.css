@@ -164,6 +164,10 @@ h1 {
   opacity: .66;
 }
 
+#uploadDesc {
+  max-width: 95%;
+}
+
 @media screen and (max-width: 500px) {
   body {
     font-size: 10px;
