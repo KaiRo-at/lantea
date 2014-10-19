@@ -186,3 +186,12 @@ h1 {
     font-size: 8px;
   }
 }
+
+#zoomInButton {
+    padding: 15px;
+    margin-top: 20px;
+}
+
+#zoomOutButton {
+    padding: 15px;
+}
