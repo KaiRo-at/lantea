@@ -144,6 +144,11 @@ function showUI() {
 
 function maybeHideUI() {
   gUIHideCountdown--;
+  if (document.getElementById("trackArea").style.display == "block") {
+    // If track area is visible, update track data.
+    document.getElementById("trackLength").textContent = calcTrackLength().toFixed(1);
+    document.getElementById("trackDuration").textContent = Math.round(calcTrackDuration()/60);
+  }
   if (gUIHideCountdown <= 0) {
     var areas = document.getElementsByClassName('overlayArea');
     for (var i = 0; i <= areas.length - 1; i++) {

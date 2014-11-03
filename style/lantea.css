@@ -78,6 +78,10 @@ h1 {
   border-radius: 3px;
 }
 
+#trackData {
+  margin: 0;
+}
+
 #map, #track {
   position: fixed;
   border: 0;

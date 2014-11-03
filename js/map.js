@@ -187,11 +187,14 @@ function loadPrefs(aEvent) {
       if (aTPoint) {
         // Add in front and return new length.
         var tracklen = gTrack.unshift(aTPoint);
-        // Redraw track periodically, larger distance the longer it gets.
+        // Redraw track periodically, larger distance the longer it gets
+        // (but clamped to the first value over a certain limit).
         // Initial paint will do initial track drawing.
         if (tracklen % redrawBase == 0) {
           drawTrack();
-          redrawBase = tracklen;
+          if (redrawBase < 1000) {
+            redrawBase = tracklen;
+          }
         }
       }
       else {
@@ -651,7 +654,7 @@ function decodeIndex(encodedIdx) {
 }
 
 function drawTrack() {
-  if (document.hidden != true) { // Only draw if we're actually visible.
+  if (gTrackContext && (document.hidden != true)) { // Only draw if we're actually visible.
     gLastDrawnPoint = null;
     gCurPosMapCache = undefined;
     gTrackContext.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
@@ -735,6 +738,50 @@ function undrawCurrentLocation() {
                                oldmp.y - gCurPosMapCache.radius);
     gCurPosMapCache = undefined;
   }
+}
+
+function calcTrackDuration() {
+  // Get the duration of the track in s.
+  var tDuration = 0;
+  if (gTrack.length > 1) {
+    for (var i = 1; i < gTrack.length; i++) {
+      tDuration += (gTrack[i].time - gTrack[i-1].time);
+    }
+  }
+  return Math.round(tDuration / 1000); // The timestamps are in ms but we return seconds.
+}
+
+function calcTrackLength() {
+  // Get the length of the track in km.
+  var tLength = 0;
+  if (gTrack.length > 1) {
+    for (var i = 1; i < gTrack.length; i++) {
+      tLength += getPointDistance(gTrack[i-1].coords, gTrack[i].coords);
+    }
+  }
+  return tLength;
+}
+
+function getPointDistance(aGPSPoint1, aGPSPoint2) {
+  // Get the distance in km between the two given GPS points.
+  // See http://stackoverflow.com/questions/365826/calculate-distance-between-2-gps-coordinates
+  // Earth is almost exactly a sphere and we calculate small distances on the surface, so we can do spherical great-circle math.
+  // Also see http://en.wikipedia.org/wiki/Great-circle_distance
+  var R = 6371; // km
+  var dLat = deg2rad(aGPSPoint2.latitude - aGPSPoint1.latitude);
+  var dLon = deg2rad(aGPSPoint2.longitude - aGPSPoint1.longitude);
+  var lat1 = deg2rad(aGPSPoint1.latitude);
+  var lat2 = deg2rad(aGPSPoint2.latitude);
+
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function deg2rad(aDegreeValue) {
+  // Convert an angle in degrees to radiants.
+  return aDegreeValue * (Math.PI / 180);
 }
 
 var mapEvHandler = {

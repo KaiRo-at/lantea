@@ -7,12 +7,12 @@ Required:
 ** Pre-cache tiles in adjacent areas and possibly zoom levels
 * Improve texture cleaning algorithm
 * Show a notification when we are loading tiles or saved data
-* Display length and duration of track
 * Display movement speed
 * Display location accuracy
 * Show a better visible marker for the current location, possibly also indicating movement direction/speed
 * Smooth animations for zooming, probably using some WebGL magic
 * Use available larger/smaller tiles with resizing as loading placeholders while zooming in/out
+* Find better UI for track length/duration display
 * Better GPX saving implementation [blocked by missing web APIs]
 ** Set file name to save into to a good default (date + maybe some location name)
 
