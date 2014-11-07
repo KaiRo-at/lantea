@@ -745,7 +745,9 @@ function calcTrackDuration() {
   var tDuration = 0;
   if (gTrack.length > 1) {
     for (var i = 1; i < gTrack.length; i++) {
-      tDuration += (gTrack[i].time - gTrack[i-1].time);
+      if (!gTrack[i].beginSegment) {
+        tDuration += (gTrack[i].time - gTrack[i-1].time);
+      }
     }
   }
   return Math.round(tDuration / 1000); // The timestamps are in ms but we return seconds.
@@ -756,7 +758,9 @@ function calcTrackLength() {
   var tLength = 0;
   if (gTrack.length > 1) {
     for (var i = 1; i < gTrack.length; i++) {
-      tLength += getPointDistance(gTrack[i-1].coords, gTrack[i].coords);
+      if (!gTrack[i].beginSegment) {
+        tLength += getPointDistance(gTrack[i-1].coords, gTrack[i].coords);
+      }
     }
   }
   return tLength;
