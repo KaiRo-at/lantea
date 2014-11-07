@@ -661,7 +661,7 @@ function drawTrack() {
     if (gTrack.length) {
       for (var i = 0; i < gTrack.length; i++) {
         drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
-                      (i + 1 >= gTrack.length));
+                      (i + 1 >= gTrack.length || gTrack[i+1].beginSegment));
       }
     }
   }
@@ -681,22 +681,23 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
     gTrackContext.lineCap = "round";
     gTrackContext.lineJoin = "round";
   }
+  // This breaks optimiziation, so make sure to reset optimization.
   if (!gLastDrawnPoint || gLastDrawnPoint == trackpoint) {
-    // This breaks optimiziation, so make sure to close path and reset optimization.
-    if (gLastDrawnPoint && gLastDrawnPoint.optimized)
-      gTrackContext.stroke();
-    gTrackContext.beginPath();
     trackpoint.optimized = false;
+    // Close path if one was open.
+    if (gLastDrawnPoint && gLastDrawnPoint.optimized) {
+      gTrackContext.stroke();
+    }
+  }
+  if (!gLastDrawnPoint || (gLastDrawnPoint == trackpoint) || !gLastDrawnPoint.optimized) {
+    // Start drawing a segment.
+    gTrackContext.beginPath();
     gTrackContext.arc(mappos.x, mappos.y,
                       gTrackContext.lineWidth, 0, Math.PI * 2, false);
     gTrackContext.fill();
   }
   else {
-    if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
-      gTrackContext.beginPath();
-      gTrackContext.moveTo(Math.round((gLastDrawnPoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                           Math.round((gLastDrawnPoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2));
-    }
+    // Continue drawing segment, close if needed.
     gTrackContext.lineTo(mappos.x, mappos.y);
     if (!trackpoint.optimized)
       gTrackContext.stroke();
