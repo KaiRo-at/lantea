@@ -21,6 +21,8 @@ Nice To Have:
 * Possibility to auto-rotate map to match movement direction
 * GPS details display (satellite visibility/strength) [blocked by missing web APIs]
 * Magnetic compass display (using orientiation API)
+* Integrate reverse geocoding, using http://wiki.openstreetmap.org/wiki/Nominatim
+  e.g. http://nominatim.openstreetmap.org/reverse?format=jdon&lat=48.2051107&lon=16.3449773&zoom=14&addressdetails=1
 
 Future Possibilities:
 
