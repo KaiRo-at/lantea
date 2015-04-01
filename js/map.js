@@ -14,9 +14,10 @@ var gCurLocColor = "#A00000";
 var gMapStyles = {
   // OSM tile usage policy: http://wiki.openstreetmap.org/wiki/Tile_usage_policy
   // Find some more OSM ones at http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Tile_servers
+  // and http://wiki.openstreetmap.org/wiki/Tiles or http://wiki.openstreetmap.org/wiki/TMS
   osm_mapnik:
     {name: "OpenStreetMap (Mapnik)",
-     url: "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
+     url: "http://[a-c].tile.openstreetmap.org/{z}/{x}/{y}.png",
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   osm_cyclemap:
     {name: "Cycle Map (OSM)",
@@ -26,22 +27,42 @@ var gMapStyles = {
     {name: "Transport Map (OSM)",
      url: "http://[a-c].tile2.opencyclemap.org/transport/{z}/{x}/{y}.png",
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+  osm_germany:
+    {name: "OSM German Style",
+     url: "http://[a-d].tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png",
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+//  oepnvkarte: // XXX: toolserver.org does not support CORS at this time :(
+//    {name: "ÖPNV-Karte (OSM)",
+//     url: "http://toolserver.org/~cmarqu/hill/{z}/{x}/{y}.png",
+//     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://memomaps.de">MeMoMaps</a> under <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
   mapquest_open:
     {name: "MapQuest OSM",
      url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png",
-     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors (<a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>), tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>.'},
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors (<a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>), tiles courtesy of <a href="http://www.mapquest.com/">MapQuest</a>.'},
   mapquest_aerial:
     {name: "MapQuest Open Aerial",
      url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg",
      copyright: 'Tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>, portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency.'},
-  opengeoserver_arial:
-    {name: "OpenGeoServer Aerial",
-     url: "http://services.opengeoserver.org/tiles/1.0.0/globe.aerial_EPSG3857/{z}/{x}/{y}.png?origin=nw",
-     copyright: 'Tiles by <a href="http://www.opengeoserver.org/">OpenGeoServer.org</a>, <a href="https://creativecommons.org/licenses/by/3.0/at/">CC-BY 3.0 AT</a>.'},
-  google_map:
-    {name: "Google Maps",
-     url: " http://mt1.google.com/vt/x={x}&y={y}&z={z}",
-     copyright: 'Map data and imagery &copy; <a href="http://maps.google.com/">Google</a>'},
+  osm_hot:
+    {name: "OSM HOT style",
+     url: "http://[a-c].tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+//  hikebike: // XXX: toolserver.org does not support CORS at this time :(
+//    {name: "Hike and Bike (OSM)",
+//     url: "http://toolserver.org/tiles/hikebike/{z}/{x}/{y}.png",
+//     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+  stamen_toner:
+    {name: "Stamen Toner (B+W, OSM)",
+     url: "http://[a-c].tile.stamen.com/toner/{z}/{x}/{y}.jpg",
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
+  stamen_terrain:
+    {name: "Stamen Terrain (USA only, OSM)",
+     url: "http://[a-c].tile.stamen.com/terrain/{z}/{x}/{y}.jpg",
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
+  stamen_watercolor:
+    {name: "Stamen Watercolor (artistic, OSM)",
+     url: "http://[a-c].tile.stamen.com/watercolor/{z}/{x}/{y}.jpg",
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
 };
 
 var gLastMouseX = 0;
@@ -1173,6 +1194,7 @@ var gTileService = {
                   .replace("{y}", norm.y)
                   .replace("{z}", norm.z)
                   .replace("[a-c]", String.fromCharCode(97 + Math.floor(Math.random() * 3)))
+                  .replace("[a-d]", String.fromCharCode(97 + Math.floor(Math.random() * 4)))
                   .replace("[1-4]", 1 + Math.floor(Math.random() * 4)),
                 true);
       XHR.responseType = "blob";
