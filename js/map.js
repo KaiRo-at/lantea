@@ -52,15 +52,15 @@ var gMapStyles = {
 //     url: "http://toolserver.org/tiles/hikebike/{z}/{x}/{y}.png",
 //     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   stamen_toner:
-    {name: "Stamen Toner (B+W, OSM)",
+    {name: "Stamen Toner (B+W)",
      url: "http://[a-c].tile.stamen.com/toner/{z}/{x}/{y}.jpg",
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
   stamen_terrain:
-    {name: "Stamen Terrain (USA only, OSM)",
+    {name: "Stamen Terrain (USA only)",
      url: "http://[a-c].tile.stamen.com/terrain/{z}/{x}/{y}.jpg",
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
   stamen_watercolor:
-    {name: "Stamen Watercolor (artistic, OSM)",
+    {name: "Stamen Watercolor (artistic)",
      url: "http://[a-c].tile.stamen.com/watercolor/{z}/{x}/{y}.jpg",
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
 };
