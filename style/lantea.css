@@ -52,12 +52,13 @@ h1 {
 }
 
 #zoomArea > input[type="button"] {
-  font-size: 1em;
+  font-size: 1.2em;
   font-weight: bold;
   width: 2em;
   height: 2em;
   border-radius: 2em;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, .25);
+  background-image: radial-gradient(circle 1.5em, #FFFFFF, transparent);
   color: #0000FF;
   border: 2px solid #0000FF;
 }
@@ -70,6 +71,10 @@ h1 {
   background-color: rgba(255, 255, 127, .8);
 }
 
+#zoomArea > input[type="button"]:focus {
+  background-color: rgba(255, 255, 255, .5);
+}
+
 #fullscreenArea {
   right: 1%;
   bottom: 2em;
@@ -77,9 +82,10 @@ h1 {
 }
 
 #zoomLevel {
-  background-color: rgba(255, 255, 255, .8);
-  border-radius: 3px;
-  padding: 0 3px;
+  /* background-color: rgba(255, 255, 255, .8); */
+  background-image: radial-gradient(circle 1.5em, #FFFFFF, transparent);
+  border-radius: .5em;
+  padding: .5em .2em;
   margin: 2px 0;
 }
 
