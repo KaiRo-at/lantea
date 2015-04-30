@@ -51,6 +51,25 @@ h1 {
   text-align: center;
 }
 
+#zoomArea > input[type="button"] {
+  font-size: 1em;
+  font-weight: bold;
+  width: 2em;
+  height: 2em;
+  border-radius: 2em;
+  background-color: transparent;
+  color: #0000FF;
+  border: 2px solid #0000FF;
+}
+
+#zoomArea > input[type="button"]:hover {
+  background-color: rgba(255, 255, 255, .8);
+}
+
+#zoomArea > input[type="button"]:active {
+  background-color: rgba(255, 255, 127, .8);
+}
+
 #fullscreenArea {
   right: 1%;
   bottom: 2em;
@@ -61,6 +80,7 @@ h1 {
   background-color: rgba(255, 255, 255, .8);
   border-radius: 3px;
   padding: 0 3px;
+  margin: 2px 0;
 }
 
 #settingsArea,
