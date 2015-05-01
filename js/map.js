@@ -172,6 +172,15 @@ function loadPrefs(aEvent) {
       gAction.removeEventListener(aEvent.type, loadPrefs, false);
     gAction.addEventListener("prefs-step", loadPrefs, false);
     gWaitCounter++;
+    gPrefs.get("active_map_style", function(aValue) {
+      if (aValue && gMapStyles[aValue]) {
+        gMap.activeMap = aValue;
+      }
+      gWaitCounter--;
+      var throwEv = new CustomEvent("prefs-step");
+      gAction.dispatchEvent(throwEv);
+    });
+    gWaitCounter++;
     gPrefs.get("position", function(aValue) {
       if (aValue && aValue.x && aValue.y && aValue.z) {
         gMap.pos = aValue;
@@ -182,10 +191,12 @@ function loadPrefs(aEvent) {
     });
     gWaitCounter++;
     gPrefs.get("center_map", function(aValue) {
-      if (aValue === undefined)
+      if (aValue === undefined) {
         document.getElementById("centerCheckbox").checked = true;
-      else
+      }
+      else {
         document.getElementById("centerCheckbox").checked = aValue;
+      }
       setCentering(document.getElementById("centerCheckbox"));
       gWaitCounter--;
       var throwEv = new CustomEvent("prefs-step");
@@ -193,10 +204,12 @@ function loadPrefs(aEvent) {
     });
     gWaitCounter++;
     gPrefs.get("tracking_enabled", function(aValue) {
-      if (aValue === undefined)
+      if (aValue === undefined) {
         document.getElementById("trackCheckbox").checked = true;
-      else
+      }
+      else {
         document.getElementById("trackCheckbox").checked = aValue;
+      }
       gWaitCounter--;
       var throwEv = new CustomEvent("prefs-step");
       gAction.dispatchEvent(throwEv);
@@ -617,8 +630,9 @@ function xy2gps(aX, aY) {
 
 function setMapStyle() {
   var mapSel = document.getElementById("mapSelector");
-  if (mapSel.selectedIndex >= 0 && gMap.activeMap != mapSel.value) {
+  if (!gWaitCounter && mapSel.selectedIndex >= 0 && gMap.activeMap != mapSel.value) {
     gMap.activeMap = mapSel.value;
+    gPrefs.set("active_map_style", gMap.activeMap);
     document.getElementById("copyright").innerHTML =
         gMapStyles[gMap.activeMap].copyright;
     showUI();
