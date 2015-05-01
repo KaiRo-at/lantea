@@ -108,8 +108,6 @@ function initMap() {
   }
   gTrackCanvas = document.getElementById("track");
   gTrackContext = gTrackCanvas.getContext("2d");
-  if (!gMap.activeMap)
-    gMap.activeMap = "osm_mapnik";
 
   //gDebug = true;
   if (gDebug) {
@@ -153,8 +151,6 @@ function loadPrefs(aEvent) {
       document.addEventListener("visibilitychange", visibilityEvHandler, false);
 
       console.log("Events added.");
-      document.getElementById("copyright").innerHTML =
-          gMapStyles[gMap.activeMap].copyright;
 
       console.log("Init loading tile...");
       gLoadingTile = new Image();
@@ -175,8 +171,13 @@ function loadPrefs(aEvent) {
     gPrefs.get("active_map_style", function(aValue) {
       if (aValue && gMapStyles[aValue]) {
         gMap.activeMap = aValue;
-        document.getElementById("mapSelector").value = aValue;
       }
+      else {
+        gMap.activeMap = "osm_mapnik";
+      }
+      document.getElementById("mapSelector").value = gMap.activeMap;
+      document.getElementById("copyright").innerHTML =
+          gMapStyles[gMap.activeMap].copyright;
       gWaitCounter--;
       var throwEv = new CustomEvent("prefs-step");
       gAction.dispatchEvent(throwEv);
@@ -631,13 +632,15 @@ function xy2gps(aX, aY) {
 
 function setMapStyle() {
   var mapSel = document.getElementById("mapSelector");
-  if (!gWaitCounter && mapSel.selectedIndex >= 0 && gMap.activeMap != mapSel.value) {
+  if (mapSel.selectedIndex >= 0 && gMap.activeMap != mapSel.value) {
     gMap.activeMap = mapSel.value;
     gPrefs.set("active_map_style", gMap.activeMap);
     document.getElementById("copyright").innerHTML =
         gMapStyles[gMap.activeMap].copyright;
-    showUI();
-    gMap.draw();
+    if (!gWaitCounter) { // Only do this when prefs are loaded already.
+      showUI();
+      gMap.draw();
+    }
   }
 }
 
