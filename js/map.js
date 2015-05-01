@@ -175,6 +175,7 @@ function loadPrefs(aEvent) {
     gPrefs.get("active_map_style", function(aValue) {
       if (aValue && gMapStyles[aValue]) {
         gMap.activeMap = aValue;
+        document.getElementById("mapSelector").value = aValue;
       }
       gWaitCounter--;
       var throwEv = new CustomEvent("prefs-step");
