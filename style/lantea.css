@@ -206,7 +206,8 @@ h1 {
   max-width: 95%;
 }
 
-@media screen and (max-width: 500px) {
+@media screen and (max-width: 500px),
+       screen and (max-height: 500px) {
   body {
     font-size: 10px;
   }
@@ -220,7 +221,7 @@ h1 {
   }
   #fullscreenArea {
     right: 1px;
-    bottom: 10px;
+    bottom: 20px;
   }
   #copyright {
     bottom: 1px;
