@@ -169,7 +169,6 @@ function loadPrefs(aEvent) {
     gAction.addEventListener("prefs-step", loadPrefs, false);
     gWaitCounter++;
     gPrefs.get("active_map_style", function(aValue) {
-      console.log("active_map_style: >>" + aValue + "<<");
       if (aValue && gMapStyles[aValue]) {
         gMap.activeMap = aValue;
       }
