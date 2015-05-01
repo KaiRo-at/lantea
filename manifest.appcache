@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# 2015-04-04
+# 2015-05-01
 index.html
 manifest.webapp
 js/map.js
@@ -12,6 +12,8 @@ style/lanteaIcon16.png
 style/lanteaIcon32.png
 style/lanteaIcon64.png
 style/lanteaIcon128.png
+style/settings.svg
+style/track.svg
 
 NETWORK:
 *
