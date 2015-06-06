@@ -8,7 +8,7 @@ Required:
 *** Feature to download all maps up to a certain resolution for some area around the current point
 * Improve texture cleaning algorithm
 * UI improvements (non-map):
-** Change general/track settings to drawer style
+** Override native style of buttons etc. in drawers with a more app-y look
 ** Show a notification when we are loading tiles or saved data
 ** Display movement speed
 ** Display location accuracy

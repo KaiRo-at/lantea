@@ -144,7 +144,7 @@ function showUI() {
 
 function maybeHideUI() {
   gUIHideCountdown--;
-  if (document.getElementById("trackArea").style.display == "block") {
+  if (!document.getElementById("trackArea").classList.contains("hidden")) {
     // If track area is visible, update track data.
     document.getElementById("trackLength").textContent = calcTrackLength().toFixed(1);
     document.getElementById("trackDuration").textContent = Math.round(calcTrackDuration()/60);
@@ -162,23 +162,23 @@ function maybeHideUI() {
 
 function toggleTrackArea() {
   var fs = document.getElementById("trackArea");
-  if (fs.style.display != "block") {
-    fs.style.display = "block";
+  if (fs.classList.contains("hidden")) {
+    fs.classList.remove("hidden");
     showUI();
   }
   else {
-    fs.style.display = "none";
+    fs.classList.add("hidden");
   }
 }
 
 function toggleSettings() {
   var fs = document.getElementById("settingsArea");
-  if (fs.style.display != "block") {
-    fs.style.display = "block";
+  if (fs.classList.contains("hidden")) {
+    fs.classList.remove("hidden");
     showUI();
   }
   else {
-    fs.style.display = "none";
+    fs.classList.add("hidden");
   }
 }
 

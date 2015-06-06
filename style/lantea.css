@@ -27,7 +27,8 @@ h1 {
 }
 
 #dialogArea:-moz-system-metric(touch-enabled),
-.overlayArea:-moz-system-metric(touch-enabled) {
+.overlayArea:-moz-system-metric(touch-enabled),
+.menuDrawer:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
 }
 
@@ -35,7 +36,9 @@ h1 {
 #dialogArea input[type="text"]:-moz-system-metric(touch-enabled),
 #dialogArea select:-moz-system-metric(touch-enabled),
 .overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
-.overlayArea select:-moz-system-metric(touch-enabled) {
+.overlayArea select:-moz-system-metric(touch-enabled),
+.menuDrawer input[type="button"]:-moz-system-metric(touch-enabled),
+.menuDrawer select:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
 }
 
@@ -105,19 +108,47 @@ h1 {
   margin: 2px 0;
 }
 
-#settingsArea,
-#trackArea {
-  display: none;
-  background-color: rgba(255, 255, 255, .8);
+.menuDrawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-40ch - 1ch); /* account for padding */
+  width: 40ch;
+  background-color: rgba(15, 15, 15, .9);
+  color: #CCCCCC;
   border: 0;
-  border-radius: 5px;
+  padding: 0 .5ch; /* account for legend */
+  margin: 0;
+  z-index: 10;
+  transition-property: left;
+  transition-duration: 1s;
+  transition-timing-function: ease;
 }
 
-#settingsArea > legend,
-#trackArea > legend {
-  display: none;
+.menuDrawer:not(.hidden) {
+  left: 0;
+}
+
+@media screen and (max-width: 330px) {
+  .menuDrawer {
+    left: calc(-300px - 1ch); /* account for padding */
+    width: 300px;
+  }
+}
+
+.menuDrawer > h2 {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: .5em 0;
   background-color: rgba(255, 255, 255, .8);
+  color: #404040;
   border-radius: 3px;
+  padding: 2px;
+}
+
+.menuDrawer > h2 > img {
+  vertical-align: text-top;
+  height: 1.2em;
 }
 
 #trackData {

@@ -18,10 +18,9 @@
 <body id="body">
 <h1>Lantea Map</h1>
 
-<div id="menuArea" class="overlayArea">
-<image src="style/track.svg" id="trackButton" value="Track"
-       onclick="toggleTrackArea();"><br/>
-<fieldset id="trackArea"><legend>Track</legend>
+<div id="trackArea" class="menuDrawer hidden">
+<h2 onclick="toggleTrackArea();">
+<image src="style/track.svg" alt=""> Track</h2>
 <p id="trackData"><span id="trackLength">0</span> km,
 <span id="trackDuration">0</span> min</p>
 <input type="button" id="saveTrackButton" value="Save"
@@ -38,10 +37,11 @@
 <input type="checkbox" id="centerCheckbox"
        onchange="setCentering(this);">
 <label for="centerCheckbox">Center Map</label><br/>
-</fieldset>
-<image src="style/settings.svg" id="settingsButton" alt="Settings"
-       onclick="toggleSettings();"><br/>
-<fieldset id="settingsArea"><legend>Settings</legend>
+</div>
+
+<div id="settingsArea" class="menuDrawer hidden">
+<h2 onclick="toggleSettings();">
+<image src="style/settings.svg" alt=""> Settings</h2>
 <label for="mapSelector">Map style:</label>
 <select id="mapSelector" onchange="setMapStyle();">
 <!-- option value="osm_mapnik">OpenStreetMap (Mapnik)</option -->
@@ -58,7 +58,13 @@
 <input type="password" id="uploadPwd" maxlength="255"
        onchange="setUploadField(this);">
 </div>
-</fieldset>
+</div>
+
+<div id="menuArea" class="overlayArea">
+<image src="style/track.svg" id="trackButton" value="Track"
+       onclick="toggleTrackArea();"><br/>
+<image src="style/settings.svg" id="settingsButton" alt="Settings"
+       onclick="toggleSettings();"><br/>
 </div>
 
 <div id="zoomArea" class="overlayArea">
