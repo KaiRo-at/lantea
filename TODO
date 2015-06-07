@@ -7,8 +7,8 @@ Required:
 ** Pre-cache tiles in adjacent areas and possibly zoom levels
 *** Feature to download all maps up to a certain resolution for some area around the current point
 * Improve texture cleaning algorithm
+* See if we can secure OSM login (investigate OAuth)
 * UI improvements (non-map):
-** Override native style of buttons etc. in drawers with a more app-y look
 ** Show a notification when we are loading tiles or saved data
 ** Display movement speed
 ** Display location accuracy

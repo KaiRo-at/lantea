@@ -32,14 +32,14 @@ h1 {
   font-size: 3mozmm;
 }
 
-#dialogArea input[type="button"]:-moz-system-metric(touch-enabled),
-#dialogArea input[type="text"]:-moz-system-metric(touch-enabled),
-#dialogArea select:-moz-system-metric(touch-enabled),
-.overlayArea input[type="button"]:-moz-system-metric(touch-enabled),
-.overlayArea select:-moz-system-metric(touch-enabled),
-.menuDrawer input[type="button"]:-moz-system-metric(touch-enabled),
-.menuDrawer select:-moz-system-metric(touch-enabled) {
-  font-size: 3mozmm;
+#dialogArea input[type="button"],
+#dialogArea input[type="text"],
+#dialogArea select,
+.overlayArea input[type="button"],
+.overlayArea select,
+.menuDrawer input[type="button"],
+.menuDrawer select {
+  font-size: inherit;
 }
 
 #menuArea {
@@ -136,11 +136,16 @@ h1 {
   }
 }
 
+.menuDrawer > p {
+  margin: .5em 0;
+}
+
+/* Menu title */
 .menuDrawer > h2 {
   font-size: 1.2em;
   font-weight: bold;
   margin: .5em 0;
-  background-color: rgba(255, 255, 255, .8);
+  background-color: #CCCCCC;
   color: #404040;
   border-radius: 3px;
   padding: 2px;
@@ -149,6 +154,103 @@ h1 {
 .menuDrawer > h2 > img {
   vertical-align: text-top;
   height: 1.2em;
+}
+
+/* Custom checkbox design */
+.menuDrawer input[type="checkbox"] {
+  display: none;
+}
+
+.menuDrawer input[type="checkbox"] + label:before {
+  content: '\00A0'; /* non-breaking space */
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: .3em;
+  text-align: center;
+  vertical-align: middle;
+  background-color: rgba(204, 204, 204, .2);
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.menuDrawer input[type="checkbox"]:hover + label:before {
+  background-color: rgba(204, 204, 204, .4);
+  border: 1px solid #FFFFFF;
+}
+.menuDrawer input[type="checkbox"]:hover + label {
+  color: #FFFFFF;
+  position:relative;
+  height: 1.2em;
+}
+
+.menuDrawer input[type="checkbox"]:active + label:before {
+  background-color: rgba(204, 204, 255, .3);
+  border: 1px solid #FFCCAA;
+}
+.menuDrawer input[type="checkbox"]:active + label {
+  color: #FFCCAA;
+}
+
+.menuDrawer input[type="checkbox"]:checked + label:before {
+  content: '\2714'; /* tick mark */
+}
+
+/* Custom button design */
+.menuDrawer input[type="button"] {
+  text-align: center;
+  vertical-align: middle;
+  background-image: none;
+  background-color: rgba(204, 204, 204, .2);
+  color: #CCCCCC;
+  padding: 1px .5em;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.menuDrawer input[type="button"]:hover {
+  background-color: rgba(204, 204, 204, .4);
+  border: 1px solid #FFFFFF;
+}
+
+.menuDrawer input[type="button"]:active {
+  background-color: rgba(204, 204, 255, .3);
+  color: #FFCCAA;
+  padding-top: 2px;
+  padding-right: calc(.5em - 1px);
+  padding-bottom: 0;
+  padding-left: calc(.5em + 1px);
+}
+
+/* Custom select design */
+.menuDrawer select {
+  text-align: left;
+  vertical-align: middle;
+  background-image: none;
+  background-color: rgba(204, 204, 204, .2);
+  color: #CCCCCC;
+  padding: 0 .5em;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.menuDrawer select:hover {
+  background-color: rgba(204, 204, 204, .4);
+  border: 1px solid #FFFFFF;
+}
+
+.menuDrawer select:active {
+  background-color: rgba(204, 204, 255, .3);
+  color: #FFCCAA;
+}
+
+.menuDrawer option:checked:not(:hover) {
+  background-color: rgba(204, 204, 204, .1);
+}
+
+.menuDrawer option:hover {
+  background-color: #CCCCCC;
+  color: #404040;
 }
 
 #trackData {

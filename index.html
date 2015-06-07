@@ -20,9 +20,12 @@
 
 <div id="trackArea" class="menuDrawer hidden">
 <h2 onclick="toggleTrackArea();">
-<image src="style/track.svg" alt=""> Track</h2>
+<image src="style/track.svg" alt=""> Track
+</h2>
 <p id="trackData"><span id="trackLength">0</span> km,
-<span id="trackDuration">0</span> min</p>
+<span id="trackDuration">0</span> min
+</p>
+<p>
 <input type="button" id="saveTrackButton" value="Save"
        onclick="saveTrack();">
 <input type="button" id="dumpTrackButton" value="Dump"
@@ -30,25 +33,34 @@
 <input type="button" id="uploadTrackButton" value="Upload" disabled="true"
        onclick="showUploadDialog();">
 <input type="button" id="clearTrackButton" value="Clear"
-       onclick="clearTrack();"><br/>
+       onclick="clearTrack();">
+</p>
+<p>
 <input type="checkbox" id="trackCheckbox"
        onchange="setTracking(this);">
 <label for="trackCheckbox">Enable tracking</label><br/>
+</p>
+<p>
 <input type="checkbox" id="centerCheckbox"
        onchange="setCentering(this);">
 <label for="centerCheckbox">Center Map</label><br/>
+</p>
 </div>
 
 <div id="settingsArea" class="menuDrawer hidden">
 <h2 onclick="toggleSettings();">
-<image src="style/settings.svg" alt=""> Settings</h2>
+<image src="style/settings.svg" alt=""> Settings
+</h2>
+<p>
 <label for="mapSelector">Map style:</label>
 <select id="mapSelector" onchange="setMapStyle();">
 <!-- option value="osm_mapnik">OpenStreetMap (Mapnik)</option -->
 </select>
-<br/>
+</p>
+<p>
 <input type="button" id="clearCacheButton" value="Clear Cached Maps"
        onclick="gTileService.clearDB();">
+</p>
 <div id="uploadSettingsArea" class="debugHide">
 <p class="settingsSubTitle">OpenStreetMap Track Upload:</p>
 <label for="uploadUser">User name:</label>
