@@ -10,6 +10,7 @@ var mainDB;
 var gAppInitDone = false;
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
+var gTrackUpdateInterval;
 var gAction, gActionLabel;
 var gOSMAPIURL = "http://api.openstreetmap.org/";
 
@@ -144,11 +145,6 @@ function showUI() {
 
 function maybeHideUI() {
   gUIHideCountdown--;
-  if (!document.getElementById("trackArea").classList.contains("hidden")) {
-    // If track area is visible, update track data.
-    document.getElementById("trackLength").textContent = calcTrackLength().toFixed(1);
-    document.getElementById("trackDuration").textContent = Math.round(calcTrackDuration()/60);
-  }
   if (gUIHideCountdown <= 0) {
     var areas = document.getElementsByClassName('overlayArea');
     for (var i = 0; i <= areas.length - 1; i++) {
@@ -160,13 +156,25 @@ function maybeHideUI() {
   }
 }
 
+function updateTrackInfo() {
+  document.getElementById("trackLengthNum").textContent = calcTrackLength().toFixed(1);
+  var duration = calcTrackDuration();
+  var durationM = Math.round(duration/60);
+  var durationH = Math.floor(durationM/60); durationM = durationM - durationH * 60;
+  document.getElementById("trackDurationH").style.display = durationH ? "inline" : "none";
+  document.getElementById("trackDurationHNum").textContent = durationH;
+  document.getElementById("trackDurationMNum").textContent = durationM;
+}
+
 function toggleTrackArea() {
   var fs = document.getElementById("trackArea");
   if (fs.classList.contains("hidden")) {
     fs.classList.remove("hidden");
     showUI();
+    gTrackUpdateInterval = setInterval(updateTrackInfo, 1000);
   }
   else {
+    clearInterval(gTrackUpdateInterval);
     fs.classList.add("hidden");
   }
 }
