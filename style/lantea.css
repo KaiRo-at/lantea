@@ -114,6 +114,7 @@ h1 {
   bottom: 0;
   left: calc(-40ch - 1ch); /* account for padding */
   width: 40ch;
+  max-width: 95%; /* make sure we don't overflow the screen */
   background-color: rgba(15, 15, 15, .9);
   color: #CCCCCC;
   border: 0;
