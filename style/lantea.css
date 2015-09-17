@@ -112,7 +112,7 @@ h1 {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: calc(-40ch - 1ch); /* account for padding */
+  transform: translateX(calc(-40ch - 1ch)); /* account for padding */
   width: 40ch;
   max-width: 95%; /* make sure we don't overflow the screen */
   background-color: rgba(15, 15, 15, .9);
@@ -121,13 +121,13 @@ h1 {
   padding: 0 .5ch; /* account for legend */
   margin: 0;
   z-index: 10;
-  transition-property: left;
+  transition-property: transform;
   transition-duration: 1s;
   transition-timing-function: ease;
 }
 
 .menuDrawer:not(.hidden) {
-  left: 0;
+  transform: translateX(0);
 }
 
 @media screen and (max-width: 330px) {
