@@ -29,39 +29,53 @@ var gMapStyles = {
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   osm_germany:
     {name: "OSM German Style",
-     url: "http://[a-d].tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png", // https is not supported at all
+     url: "https://tilecache.kairo.at/osmde/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://[a-d].tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png", // https is not supported at all
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
-//  oepnvkarte: // XXX: toolserver.org does not support CORS at this time :(
-//    {name: "ÖPNV-Karte (OSM)",
-//     url: "http://toolserver.org/~cmarqu/hill/{z}/{x}/{y}.png",
-//     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://memomaps.de">MeMoMaps</a> under <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
+  oepnvkarte:
+    {name: "ÖPNV-Karte (OSM)",
+     url: "https://tilecache.kairo.at/oepnv/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png", // memomaps.de does not support CORS or https at this time :(
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://memomaps.de">MeMoMaps</a> under <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
   mapquest_open:
     {name: "MapQuest OSM",
-     url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png", // https has wrong cert, akamai instead of mqcdn
+     url: "https://tilecache.kairo.at/mapqosm/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png", // https has wrong cert, akamai instead of mqcdn
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors (<a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>), tiles courtesy of <a href="http://www.mapquest.com/">MapQuest</a>.'},
   mapquest_aerial:
     {name: "MapQuest Open Aerial",
-     url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg",
+     url: "https://tilecache.kairo.at/mapqsat/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://otile[1-4].mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg",
      copyright: 'Tiles Courtesy of <a href="http://www.mapquest.com/">MapQuest</a>, portions Courtesy NASA/JPL-Caltech and U.S. Depart. of Agriculture, Farm Service Agency.'},
   osm_hot:
     {name: "OSM HOT style",
-     url: "http://[a-c].tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", // https has CAcert which doesn't work in browsers
+     url: "https://tilecache.kairo.at/osmhot/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://[a-c].tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", // https has CAcert which doesn't work in browsers
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
-//  hikebike: // XXX: toolserver.org does not support CORS at this time :(
-//    {name: "Hike and Bike (OSM)",
-//     url: "http://toolserver.org/tiles/hikebike/{z}/{x}/{y}.png",
-//     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+  hikebike:
+    {name: "Hike and Bike (OSM)",
+     url: "https://tilecache.kairo.at/hikebike/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://toolserver.org/tiles/hikebike/{z}/{x}/{y}.png", // toolserver.org does not support CORS at this time :(
+     copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+  outdoors:
+    {name: "Outdoors (OSM)",
+     url: "https://tilecache.kairo.at/outdoors/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://toolserver.org/tiles/hikebike/{z}/{x}/{y}.png", // toolserver.org does not support CORS at this time :(
+     copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> and contributors (<a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>), tiles by <a href="http://www.thunderforest.com/">Thunderforest</a>.'},
   stamen_toner:
-    {name: "Stamen Toner (B+W)", // https has wrong cert, .ssl.fastly.net instead of .tile.stamen.com
-     url: "http://[a-c].tile.stamen.com/toner/{z}/{x}/{y}.jpg",
+    {name: "Stamen Toner (B+W)",
+     url: "https://tilecache.kairo.at/toner/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://[a-c].tile.stamen.com/toner/{z}/{x}/{y}.jpg", // https has wrong cert, .ssl.fastly.net instead of .tile.stamen.com
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
   stamen_terrain:
-    {name: "Stamen Terrain (USA only)", // https has wrong cert, .ssl.fastly.net instead of .tile.stamen.com
-     url: "http://[a-c].tile.stamen.com/terrain/{z}/{x}/{y}.jpg",
+    {name: "Stamen Terrain (USA only)",
+     url: "https://tilecache.kairo.at/terrain/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://[a-c].tile.stamen.com/terrain/{z}/{x}/{y}.jpg", // https has wrong cert, .ssl.fastly.net instead of .tile.stamen.com
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
   stamen_watercolor:
-    {name: "Stamen Watercolor (artistic)", // https has wrong cert, .ssl.fastly.net instead of .tile.stamen.com
-     url: "http://[a-c].tile.stamen.com/watercolor/{z}/{x}/{y}.jpg",
+    {name: "Stamen Watercolor (artistic)",
+     url: "https://tilecache.kairo.at/watercolor/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     //url: "http://[a-c].tile.stamen.com/watercolor/{z}/{x}/{y}.jpg", // https has wrong cert, .ssl.fastly.net instead of .tile.stamen.com
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.'},
 };
 
@@ -569,7 +583,7 @@ var gMap = {
           }
         }
       }
-      console.log("Cleaning complete, " + Object.keys(gMap.glTextures).length + " textures left)");
+      console.log("Cleaning complete, " + Object.keys(gMap.glTextures).length + " textures left");
     }
   },
 
@@ -1286,11 +1300,13 @@ var gTileService = {
     var request = transaction.objectStore(this.objStore).clear();
     request.onsuccess = function(event) {
       success = true;
+      console.log("Cache cleared.");
       if (aCallback)
         aCallback(success, event);
     };
     request.onerror = function(event) {
       // Errors can be handled here.
+      console.log("Error clearing cache!");
       if (aCallback)
         aCallback(success, event);
     }
