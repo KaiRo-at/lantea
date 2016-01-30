@@ -29,12 +29,12 @@ var gMapStyles = {
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   osm_germany:
     {name: "OSM German Style",
-     url: "https://tilecache.kairo.at/osmde/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     url: "https://tilecache[1-4].kairo.at/osmde/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
      //url: "http://[a-d].tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png", // https is not supported at all
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
   oepnvkarte:
     {name: "ÖPNV-Karte (OSM)",
-     url: "https://tilecache.kairo.at/oepnv/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
+     url: "https://tilecache[1-4].kairo.at/oepnv/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
      //url: "http://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png", // memomaps.de does not support CORS or https at this time :(
      copyright: 'Map data &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>, tiles by <a href="http://memomaps.de">MeMoMaps</a> under <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>.'},
   mapquest_open:
