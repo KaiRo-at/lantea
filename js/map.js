@@ -75,7 +75,7 @@ var gMapPrefsLoaded = false;
 var gDragging = false;
 var gDragTouchID, gPinchStartWidth;
 
-var gGeoWatchID;
+var gGeoWatchID, gGPSWakeLock;
 var gTrack = [];
 var gLastTrackPoint, gLastDrawnPoint;
 var gCenterPosition = true;
@@ -1119,6 +1119,9 @@ function startTracking() {
   if (gGeolocation) {
     gActionLabel.textContent = "Establishing Position";
     gAction.style.display = "block";
+    if (navigator.requestWakeLock) {
+      gGPSWakeLock = navigator.requestWakeLock("gps");
+    }
     gGeoWatchID = gGeolocation.watchPosition(
       function(position) {
         if (gActionLabel.textContent) {
@@ -1173,6 +1176,10 @@ function endTracking() {
   if (gActionLabel.textContent) {
     gActionLabel.textContent = "";
     gAction.style.display = "none";
+  }
+  if (navigator.requestWakeLock && gGPSWakeLock) {
+    console.log("releasing WakeLock");
+    gGPSWakeLock.unlock();
   }
   if (gGeoWatchID) {
     gGeolocation.clearWatch(gGeoWatchID);
