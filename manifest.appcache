@@ -1,10 +1,12 @@
 CACHE MANIFEST
 
-# 2016-03-06
+# 2016-03-26
 index.html
+auth-done.html
 manifest.webapp
 js/map.js
 js/ui.js
+js/osmauth.js
 style/lantea.css
 style/loading.png
 style/loading_action.png

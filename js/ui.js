@@ -12,7 +12,13 @@ var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gTrackUpdateInterval;
 var gAction, gActionLabel;
-var gOSMAPIURL = "http://api.openstreetmap.org/";
+var gOSMAPIURL = "https://api.openstreetmap.org/";
+var gOSMOAuthData = {
+    oauth_consumer_key: "6jjWwlbhGqyYeCdlFE1lTGG6IRGOv1yKpFxkcq2z",
+    oauth_secret: "A21gUeDM6mdoQgbA9uF7zJ13sbUQrNG7QQ4oSrKA",
+    url: "https://www.openstreetmap.org",
+    landing: "auth-done.html",
+}
 
 window.onload = function() {
   gAction = document.getElementById("action");
@@ -362,6 +368,51 @@ function uploadTrack() {
   //formData.append("tags", "");
   formData.append("visibility",
                   document.getElementById("uploadVisibility").value);
+
+/* GPS trace upload API still only supports HTTP Basic Auth. This below would be OAuth code to try.
+  // Init OSM Auth, see https://github.com/osmlab/osm-auth
+  var auth = osmAuth({
+    oauth_consumer_key: gOSMOAuthData.oauth_consumer_key,
+    oauth_secret: gOSMOAuthData.oauth_secret,
+    url: gOSMOAuthData.url,
+    landing: gOSMOAuthData.landing,
+    auto: true // show a login form if the user is not authenticated and
+               // you try to do a call
+  });
+
+  // Do an authenticate request first, so that we actuall do the login.
+  if (!auth.authenticated) {
+    auth.authenticate(function(err, xhrresponse) {
+      if (err) {
+        reportUploadStatus(false);
+      }
+      else {
+        reportUploadStatus(true);
+      }
+    });
+  }
+  if (!auth.authenticated) {
+    reportUploadStatus(false);
+    return;
+  }
+  // Only now do the actual upload.
+  auth.xhr({
+      method: "POST",
+      path: "/api/0.6/gpx/create",
+      content: formData,
+      options: {"header": {"Content-Type": "multipart/form-data"}},
+    },
+    function(err, xhrresponse) {
+      if (err) {
+        reportUploadStatus(false);
+      }
+      else {
+        reportUploadStatus(true);
+      }
+    }
+  );
+*/
+
   // Do an empty POST request first, so that we don't send everything,
   // then ask for credentials, and then send again.
   var hXHR = new XMLHttpRequest();
