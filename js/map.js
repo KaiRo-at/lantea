@@ -861,12 +861,12 @@ var mapEvHandler = {
 
       // Bail out if the started touch can't be found.
       if (touchEvent && gDragging &&
-          !aEvent.changedTouches.identifiedTouch(gDragTouchID))
+          !aEvent.targetTouches.item(0))
         return;
     }
 
     var coordObj = touchEvent ?
-                   aEvent.changedTouches.identifiedTouch(gDragTouchID) :
+                   aEvent.targetTouches.item(0) :
                    aEvent;
 
     switch (aEvent.type) {
@@ -881,8 +881,7 @@ var mapEvHandler = {
                          aEvent.targetTouches.item(0).clientY, 2)
             );
           }
-          gDragTouchID = aEvent.changedTouches.item(0).identifier;
-          coordObj = aEvent.changedTouches.identifiedTouch(gDragTouchID);
+          coordObj = aEvent.targetTouches.item(0);
         }
         var x = coordObj.clientX - gGLMapCanvas.offsetLeft;
         var y = coordObj.clientY - gGLMapCanvas.offsetTop;
