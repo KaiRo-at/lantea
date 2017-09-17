@@ -12,6 +12,8 @@ var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gTrackUpdateInterval;
 var gAction, gActionLabel;
+var gBackendURL = "https://backend.lantea.kairo.at";
+var gAuthClientID = "lantea";
 var gOSMAPIURL = "https://api.openstreetmap.org/";
 var gOSMOAuthData = {
     oauth_consumer_key: "6jjWwlbhGqyYeCdlFE1lTGG6IRGOv1yKpFxkcq2z",
@@ -21,6 +23,11 @@ var gOSMOAuthData = {
 }
 
 window.onload = function() {
+  if (/\/login\.html/.test(window.location)) {
+    // If we are in the login window, call a function to complete the process and don't do anything else here.
+    completeLoginWindow();
+    return;
+  }
   gAction = document.getElementById("action");
   gActionLabel = document.getElementById("actionlabel");
 
@@ -54,10 +61,29 @@ window.onload = function() {
     document.getElementById("saveTrackButton").classList.add("debugHide");
   }
 
-  // Without OAuth, the login data is useless
-  //document.getElementById("uploadSettingsArea").classList.remove("debugHide");
-  // As login data is useless for now, always enable upload button
-  document.getElementById("uploadTrackButton").disabled = false;
+  // Set backend URL in a way that it works for testing on localhost as well as
+  // both the lantea.kairo.at and lantea-dev.kairo.at deployments.
+  if (window.location.host == "localhost") {
+    gBackendURL = window.location.protocol + '//' + window.location.host + "/lantea-backend/";
+  }
+  else {
+    gBackendURL = window.location.protocol + '//' + "backend." + window.location.host + "/";
+  }
+  // Make sure to use a different login client ID for the -dev setup.
+  if (/\-dev\./.test(window.location.host)) {
+    gAuthClientID += "-dev";
+  }
+
+  // Set up the login area.
+  document.getElementById("loginbtn").onclick = startLogin;
+  document.getElementById("logoutbtn").onclick = doLogout;
+  prepareLoginButton(function() {
+    // Anything that needs the backend should only be triggered from in here.
+    // That makes sure that the first call the the backend is oauth_state and no other is running in parallel.
+    // If we call multiple backend methods at once and no session is open, we create multiple sessions, which calls for confusion later on.
+
+    // Call any UI preparation that needs the backend.
+  });
 
   if (gDebug) {
     // Note that GPX upload returns an error 500 on the dev API right now.
@@ -95,6 +121,114 @@ function postInit(aEvent) {
 
 window.onresize = function() {
   gMap.resizeAndDraw();
+}
+
+function startLogin() {
+  var authURL = authData["url"] + "authorize?response_type=code&client_id=" + gAuthClientID + "&scope=email" +
+                "&state=" + authData["state"] + "&redirect_uri=" + encodeURIComponent(getRedirectURI());
+  if (window.open(authURL, "KaiRoAuth", 'height=450,width=600')) {
+    console.log("Sign In window open.");
+  }
+  else {
+    console.log("Opening Sign In window failed.");
+  }
+}
+
+function getRedirectURI() {
+  return window.location.protocol + '//' + window.location.host + window.location.pathname + "login.html";
+}
+
+function doLogout() {
+  fetchBackend("logout", "GET", null,
+     function(aResult, aStatus) {
+        if (aStatus < 400) {
+          prepareLoginButton();
+        }
+        else {
+          console.log("Backend issue trying to log out.");
+        }
+      },
+      {}
+  );
+}
+
+function prepareLoginButton(aCallback) {
+  fetchBackend("oauth_state", "GET", null,
+      function(aResult, aStatus) {
+        if (aStatus == 200) {
+          if (aResult["logged_in"]) {
+            userData = {
+              "email": aResult["email"],
+              "permissions": aResult["permissions"],
+            };
+            authData = null;
+            displayLogin();
+          }
+          else {
+            authData = {"state": aResult["state"], "url": aResult["url"]};
+            userData = null;
+            displayLogout();
+          }
+        }
+        else {
+          console.log("Backend issue fetching OAuth state.");
+        }
+        if (aCallback) { aCallback(); }
+      },
+      {}
+  );
+}
+
+function completeLoginWindow() {
+  if (window.opener) {
+    window.opener.finishLogin(getParameterByName("code"), getParameterByName("state"));
+    window.close();
+  }
+  else {
+    document.getElementById("logininfo").textContent = "You have called this document outside of the login flow, which is not supported.";
+  }
+}
+
+function finishLogin(aCode, aState) {
+  if (aState == authData["state"]) {
+    fetchBackend("login?code=" + aCode + "&state=" + aState + "&redirect_uri=" + encodeURIComponent(getRedirectURI()), "GET", null,
+        function(aResult, aStatus) {
+          if (aStatus == 200) {
+            userData = {
+              "email": aResult["email"],
+              "permissions": aResult["permissions"],
+            };
+            displayLogin();
+          }
+          else {
+            console.log("Login error " + aStatus + ": " + aResult["message"]);
+            prepareLoginButton();
+          }
+        },
+        {}
+    );
+  }
+  else {
+    console.log("Login state did not match, not continuing with login.");
+  }
+}
+
+function displayLogin() {
+  document.getElementById("loginbtn").classList.add("hidden");
+  document.getElementById("logindesc").classList.add("hidden");
+  document.getElementById("username").classList.remove("hidden");
+  document.getElementById("username").textContent = userData.email;
+  document.getElementById("uploadTrackButton").disabled = false;
+  document.getElementById("logoutbtn").classList.remove("hidden");
+}
+
+function displayLogout() {
+  document.getElementById("logoutbtn").classList.add("hidden");
+  document.getElementById("username").classList.add("hidden");
+  document.getElementById("username").textContent = "";
+  document.getElementById("uploadTrackButton").disabled = true;
+  document.getElementById("loginbtn").classList.remove("hidden");
+  document.getElementById("logindesc").classList.remove("hidden");
 }
 
 function initDB(aEvent) {
@@ -608,3 +742,37 @@ var gTrackStore = {
     }
   }
 };
+
+function fetchBackend(aEndpoint, aMethod, aSendData, aCallback, aCallbackForwards) {
+  var XHR = new XMLHttpRequest();
+  XHR.onreadystatechange = function() {
+    if (XHR.readyState == 4) {
+      // State says we are fully loaded.
+      var result = {};
+      if (XHR.getResponseHeader("Content-Type") == "application/json") {
+        // Got a JSON object, see if we have success.
+        result = JSON.parse(XHR.responseText);
+      }
+      else {
+        result = XHR.responseText;
+      }
+      aCallback(result, XHR.status, aCallbackForwards);
+    }
+  };
+  XHR.open(aMethod, gBackendURL + aEndpoint, true);
+  //XHR.setRequestHeader("Accept", "application/json");
+  try {
+    XHR.send(aSendData); // Send actual form data.
+  }
+  catch (e) {
+    aCallback(e, 500, aCallbackForwards);
+  }
+}
+
+function getParameterByName(aName) {
+  // from http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+  name = aName.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+      results = regex.exec(location.search);
+  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
