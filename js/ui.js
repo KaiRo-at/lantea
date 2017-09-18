@@ -171,7 +171,7 @@ function prepareLoginButton(aCallback) {
           }
         }
         else {
-          console.log("Backend issue fetching OAuth state.");
+          console.log("Backend error " + aStatus + " fetching OAuth state: " + aResult["message"]);
         }
         if (aCallback) { aCallback(); }
       },
