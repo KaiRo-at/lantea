@@ -760,6 +760,7 @@ function fetchBackend(aEndpoint, aMethod, aSendData, aCallback, aCallbackForward
     }
   };
   XHR.open(aMethod, gBackendURL + aEndpoint, true);
+  XHR.withCredentials = "true";
   //XHR.setRequestHeader("Accept", "application/json");
   try {
     XHR.send(aSendData); // Send actual form data.
