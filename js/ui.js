@@ -135,7 +135,7 @@ function startLogin() {
 }
 
 function getRedirectURI() {
-  return window.location.protocol + '//' + window.location.host + window.location.pathname + "login.html";
+  return window.location.protocol + '//' + window.location.host + window.location.pathname.replace("index.html", "") + "login.html";
 }
 
 function doLogout() {
