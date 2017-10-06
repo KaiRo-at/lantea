@@ -145,7 +145,7 @@ h1 {
   }
 }
 
-.menuDrawer > p {
+.menuDrawer p {
   margin: .5em 0;
 }
 
@@ -285,12 +285,12 @@ h1 {
 
 .menuDrawer input[type="text"],
 .menuDrawer input[type="number"] {
+  font-size: 1em;
   vertical-align: middle;
   background-image: none;
   background-color: rgba(204, 204, 204, .7);
   color: #404040;
   padding: 1px .5em;
-  margin: 1px 0;
   border: 1px solid #CCCCCC;
   border-radius: 3px;
 }
@@ -322,8 +322,19 @@ h1 {
   color: #202020;
 }
 
+.menuDrawer p.subTitle {
+  margin: .75em 0 .5em;
+  font-weight: bold;
+}
+
 #trackData {
   margin: 0;
+}
+
+#trackDialogArea {
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  padding: 3px 0;
 }
 
 #map, #track {
@@ -360,11 +371,6 @@ h1 {
 
 .debugHide {
   display: none;
-}
-
-.settingsSubTitle {
-  margin: .5em 0 0;
-  font-weight: bold;
 }
 
 #copyright {

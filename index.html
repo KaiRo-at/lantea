@@ -41,7 +41,7 @@
 </p>
 <div id="trackDialogArea" class="hidden">
 <div id="uploadDialog">
-<p class="dialogTitle">Upload Track to Lantea Maps Server:</p>
+<p class="subTitle">Upload Track to Lantea Maps Server:</p>
 <label for="uploadPublic">Visibility:</label>
 <select id="uploadPublic">
 <option value="true">Public Domain</option>
@@ -49,13 +49,17 @@
 </select>
 <p class="dialogHelp">Public Domain tracks can be forwarded by the server
 operator to any other services, e.g. OpenStreetMap.</p>
+<p>
 <label for="uploadDesc">Comment:</label>
 <input type="text" id="uploadDesc" maxlength="255" size="25"
        value="Lantea Maps">
+</p>
+<p>
 <input type="button" id="uploadDialogUploadButton" value="Upload Track"
        onclick="uploadTrack();">
 <input type="button" id="uploadDialogCancelButton" value="Cancel"
        onclick="cancelTrackDialog();">
+</p>
 </div>
 <div id="uploadStatus">
 <p class="dialogTitle">Track Upload to Lantea Maps Server</p>
@@ -102,10 +106,12 @@ operator to any other services, e.g. OpenStreetMap.</p>
        onclick="gTileService.clearDB();">
 </p>
 <div id="uploadSettingsArea">
-<p class="settingsSubTitle">Track Upload:</p>
+<p class="subTitle">Track Upload:</p>
+<p>
 <label for="uploadDevName">Device name:</label>
 <input type="text" id="uploadDevName" maxlength="255" placeholder="My Device"
        onchange="setUploadField(this);">
+</p>
 <p class="dialogHelp">The device name enables you to tell apart tracks you may
 upload from multiple devices.</p>
 </div>
