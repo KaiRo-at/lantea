@@ -283,6 +283,45 @@ h1 {
   color: #404040;
 }
 
+.menuDrawer input[type="text"],
+.menuDrawer input[type="number"] {
+  vertical-align: middle;
+  background-image: none;
+  background-color: rgba(204, 204, 204, .7);
+  color: #404040;
+  padding: 1px .5em;
+  margin: 1px 0;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.menuDrawer input[type="text"] {
+  text-align: left;
+}
+
+.menuDrawer input[type="number"] {
+  text-align: right;
+}
+
+.menuDrawer input[type="text"]:disabled,
+.menuDrawer input[type="number"]:disabled {
+  background-color: rgba(204, 204, 204, .1);
+  color: rgba(204, 204, 204, .5);
+  border: 1px solid rgba(255, 255, 255, .5);
+}
+
+.menuDrawer input[type="text"]:not(:disabled):hover,
+.menuDrawer input[type="number"]:not(:disabled):hover {
+  border: 1px solid #FFFFFF;
+}
+
+.menuDrawer input[type="text"]:not(:disabled):focus,
+.menuDrawer input[type="number"]:not(:disabled):focus {
+  background-color: rgba(204, 204, 255, .8);
+  border: 1px solid #FFFFFF;
+  color: #202020;
+}
+
 #trackData {
   margin: 0;
 }
@@ -332,7 +371,7 @@ h1 {
   bottom: 5px;
   right: .5em;
   margin: 0;
-  font-size: small;
+  font-size: .8em;
   opacity: .66;
   z-index: 2;
   background-color: rgba(255, 255, 255, 1);
@@ -371,7 +410,7 @@ h1 {
 
 .dialogHelp {
   margin: .5em 0;
-  font-size: small;
+  font-size: .8em;
   opacity: .66;
 }
 
@@ -399,6 +438,5 @@ h1 {
   #copyright {
     bottom: 1px;
     right: 1px;
-    font-size: 8px;
   }
 }

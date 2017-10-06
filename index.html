@@ -49,7 +49,7 @@
 </select>
 <p class="dialogHelp">Public Domain tracks can be forwarded by the server
 operator to any other services, e.g. OpenStreetMap.</p>
-<label for="uploadDesc">Description:</label>
+<label for="uploadDesc">Comment:</label>
 <input type="text" id="uploadDesc" maxlength="255" size="25"
        value="Lantea Maps">
 <input type="button" id="uploadDialogUploadButton" value="Upload Track"
@@ -101,14 +101,13 @@ operator to any other services, e.g. OpenStreetMap.</p>
 <input type="button" id="clearCacheButton" value="Clear Cached Maps"
        onclick="gTileService.clearDB();">
 </p>
-<div id="uploadSettingsArea" class="debugHide">
-<p class="settingsSubTitle">OpenStreetMap Track Upload:</p>
-<label for="uploadUser">User name:</label>
-<input type="text" id="uploadUser" maxlength="255"
-       onchange="setUploadField(this);"><br/>
-<label for="uploadPwd">Password:</label>
-<input type="password" id="uploadPwd" maxlength="255"
+<div id="uploadSettingsArea">
+<p class="settingsSubTitle">Track Upload:</p>
+<label for="uploadDevName">Device name:</label>
+<input type="text" id="uploadDevName" maxlength="255" placeholder="My Device"
        onchange="setUploadField(this);">
+<p class="dialogHelp">The device name enables you to tell apart tracks you may
+upload from multiple devices.</p>
 </div>
 </div>
 

@@ -14,13 +14,6 @@ var gTrackUpdateInterval;
 var gAction, gActionLabel;
 var gBackendURL = "https://backend.lantea.kairo.at";
 var gAuthClientID = "lantea";
-var gOSMAPIURL = "https://api.openstreetmap.org/";
-var gOSMOAuthData = {
-    oauth_consumer_key: "6jjWwlbhGqyYeCdlFE1lTGG6IRGOv1yKpFxkcq2z",
-    oauth_secret: "A21gUeDM6mdoQgbA9uF7zJ13sbUQrNG7QQ4oSrKA",
-    url: "https://www.openstreetmap.org",
-    landing: "auth-done.html",
-}
 
 window.onload = function() {
   if (/\/login\.html/.test(window.location)) {
@@ -85,11 +78,6 @@ window.onload = function() {
     // Call any UI preparation that needs the backend.
   });
 
-  if (gDebug) {
-    // Note that GPX upload returns an error 500 on the dev API right now.
-    gOSMAPIURL = "http://api06.dev.openstreetmap.org/";
-  }
-
   gAction.addEventListener("dbinit-done", initMap, false);
   gAction.addEventListener("mapinit-done", postInit, false);
   console.log("starting DB init...");
@@ -106,16 +94,10 @@ function postInit(aEvent) {
   gActionLabel.textContent = "";
   gAction.style.display = "none";
   setTracking(document.getElementById("trackCheckbox"));
-  gPrefs.get(gDebug ? "osm_dev_user" : "osm_user", function(aValue) {
+  gPrefs.get("devicename", function(aValue) {
     if (aValue) {
-      document.getElementById("uploadUser").value = aValue;
-      document.getElementById("uploadTrackButton").disabled = false;
+      document.getElementById("uploadDevName").value = aValue;
     }
-  });
-  gPrefs.get(gDebug ? "osm_dev_pwd" : "osm_pwd", function(aValue) {
-    var upwd = document.getElementById("uploadPwd");
-    if (aValue)
-      document.getElementById("uploadPwd").value = aValue;
   });
 }
 
@@ -400,12 +382,8 @@ var uiEvHandler = {
 
 function setUploadField(aField) {
   switch (aField.id) {
-    case "uploadUser":
-      gPrefs.set(gDebug ? "osm_dev_user" : "osm_user", aField.value);
-      document.getElementById("uploadTrackButton").disabled = !aField.value.length;
-      break;
-    case "uploadPwd":
-      gPrefs.set(gDebug ? "osm_dev_pwd" : "osm_pwd", aField.value);
+    case "uploadDevName":
+      gPrefs.set("devicename", aField.value);
       break;
   }
 }
@@ -497,7 +475,8 @@ function uploadTrack() {
   var desc = document.getElementById("uploadDesc").value;
   formData.append("comment",
                   desc.length ? desc : "Track recorded via Lantea Maps");
-  //formData.append("devicename", "");
+  formData.append("devicename",
+                  document.getElementById("uploadDevName").value);
   formData.append("public",
                   document.getElementById("uploadPublic").value);
 
@@ -673,7 +652,14 @@ function fetchBackend(aEndpoint, aMethod, aSendData, aCallback, aCallbackForward
       var result = {};
       if (XHR.getResponseHeader("Content-Type") == "application/json") {
         // Got a JSON object, see if we have success.
-        result = JSON.parse(XHR.responseText);
+        try {
+          result = JSON.parse(XHR.responseText);
+        }
+        catch (e) {
+          console.log(e);
+          result = {"error": e,
+                    "message": XHR.responseText};
+        }
       }
       else {
         result = XHR.responseText;
