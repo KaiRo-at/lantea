@@ -39,6 +39,36 @@
 <input type="button" id="clearTrackButton" value="Clear"
        onclick="clearTrack();">
 </p>
+<div id="trackDialogArea" class="hidden">
+<div id="uploadDialog">
+<p class="dialogTitle">Upload Track to Lantea Maps Server:</p>
+<label for="uploadPublic">Visibility:</label>
+<select id="uploadPublic">
+<option value="true">Public Domain</option>
+<option value="false">Private</option>
+</select>
+<p class="dialogHelp">Public Domain tracks can be forwarded by the server
+operator to any other services, e.g. OpenStreetMap.</p>
+<label for="uploadDesc">Description:</label>
+<input type="text" id="uploadDesc" maxlength="255" size="25"
+       value="Lantea Maps">
+<input type="button" id="uploadDialogUploadButton" value="Upload Track"
+       onclick="uploadTrack();">
+<input type="button" id="uploadDialogCancelButton" value="Cancel"
+       onclick="cancelTrackDialog();">
+</div>
+<div id="uploadStatus">
+<p class="dialogTitle">Track Upload to Lantea Maps Server</p>
+<p id="uploadInProgress"><img id="actionimg" src="style/loading_action.png">
+  Upload in progress&hellip;</p>
+<p id="uploadSuccess" style="display:none;">Track upload successful!</p>
+<p id="uploadFailed" style="display:none;">Track upload failed.</p>
+<p id="uploadError" style="display:none;">Error:<br>
+  <span id="uploadErrorMsg"></span></p>
+<input type="button" id="uploadStatusCloseButton" value="Close"
+       onclick="cancelTrackDialog();" disabled="true">
+</div>
+</div>
 <p class="loginbox">
 <button type="button" id="loginbtn" class="hidden">Sign in</button>
 <span id="logindesc" class="hidden">to enable uploads</span>
@@ -104,34 +134,6 @@
 </div>
 
 <div id="dialogArea" class="hidden">
-<div id="uploadDialog">
-<p class="dialogTitle">Upload Track to OpenStreetMap:</p>
-<label for="uploadVisibility">Visibility:</label>
-<select id="uploadVisibility">
-<option value="identifiable">Identifiable</option>
-<option value="private">Private</option>
-</select><br>
-<label for="uploadDesc">Description:</label>
-<input type="text" id="uploadDesc" maxlength="255" size="25"
-       value="Lantea Maps">
-<p class="dialogHelp">You will be asked for your OSM user name and password
-  when clicking "Upload Track".</p>
-<input type="button" id="uploadDialogUploadButton" value="Upload Track"
-       onclick="uploadTrack();">
-<input type="button" id="uploadDialogCancelButton" value="Cancel"
-       onclick="cancelDialog();">
-</div>
-<div id="uploadStatus">
-<p class="dialogTitle">Track Upload to OpenStreetMap</p>
-<p id="uploadInProgress"><img id="actionimg" src="style/loading_action.png">
-  Upload in progress&hellip;</p>
-<p id="uploadSuccess" style="display:none;">Track upload successful!</p>
-<p id="uploadFailed" style="display:none;">Track upload failed.</p>
-<p id="uploadError" style="display:none;">Error:<br>
-  <span id="uploadErrorMsg"></span></p>
-<input type="button" id="uploadStatusCloseButton" value="Close"
-       onclick="cancelDialog();" disabled="true">
-</div>
 <div id="noGLwarning">
   Unable to initialize WebGL. You need a browser that supports it.
 </div>

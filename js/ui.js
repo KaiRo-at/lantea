@@ -355,7 +355,7 @@ function toggleFullscreen() {
 }
 
 function showUploadDialog() {
-  var dia = document.getElementById("dialogArea");
+  var dia = document.getElementById("trackDialogArea");
   var areas = dia.children;
   for (var i = 0; i <= areas.length - 1; i++) {
     areas[i].style.display = "none";
@@ -375,8 +375,8 @@ function showGLWarningDialog() {
   dia.classList.remove("hidden");
 }
 
-function cancelDialog() {
-  document.getElementById("dialogArea").classList.add("hidden");
+function cancelTrackDialog() {
+  document.getElementById("trackDialogArea").classList.add("hidden");
   document.getElementById("uploadTrackButton").disabled = false;
 }
 
@@ -476,7 +476,7 @@ function saveTrackDump() {
 
 function uploadTrack() {
   // Hide all areas in the dialog.
-  var dia = document.getElementById("dialogArea");
+  var dia = document.getElementById("trackDialogArea");
   var areas = dia.children;
   for (var i = 0; i <= areas.length - 1; i++) {
     areas[i].style.display = "none";
@@ -491,104 +491,26 @@ function uploadTrack() {
   // Now show the status area.
   document.getElementById("uploadStatus").style.display = "block";
 
-  // See http://wiki.openstreetmap.org/wiki/Api06#Uploading_traces
-  var trackBlob = new Blob([convertTrack("gpx")],
-                           { "type" : "application/gpx+xml" });
+  // Assemble field to post to the backend.
   var formData = new FormData();
-  formData.append("file", trackBlob);
+  formData.append("jsondata", convertTrack("json"));
   var desc = document.getElementById("uploadDesc").value;
-  formData.append("description",
+  formData.append("comment",
                   desc.length ? desc : "Track recorded via Lantea Maps");
-  //formData.append("tags", "");
-  formData.append("visibility",
-                  document.getElementById("uploadVisibility").value);
+  //formData.append("devicename", "");
+  formData.append("public",
+                  document.getElementById("uploadPublic").value);
 
-/* GPS trace upload API still only supports HTTP Basic Auth. This below would be OAuth code to try.
-  // Init OSM Auth, see https://github.com/osmlab/osm-auth
-  var auth = osmAuth({
-    oauth_consumer_key: gOSMOAuthData.oauth_consumer_key,
-    oauth_secret: gOSMOAuthData.oauth_secret,
-    url: gOSMOAuthData.url,
-    landing: gOSMOAuthData.landing,
-    auto: true // show a login form if the user is not authenticated and
-               // you try to do a call
-  });
-
-  // Do an authenticate request first, so that we actuall do the login.
-  if (!auth.authenticated) {
-    auth.authenticate(function(err, xhrresponse) {
-      if (err) {
-        reportUploadStatus(false);
-      }
-      else {
-        reportUploadStatus(true);
-      }
-    });
-  }
-  if (!auth.authenticated) {
-    reportUploadStatus(false);
-    return;
-  }
-  // Only now do the actual upload.
-  auth.xhr({
-      method: "POST",
-      path: "/api/0.6/gpx/create",
-      content: formData,
-      options: {"header": {"Content-Type": "multipart/form-data"}},
-    },
-    function(err, xhrresponse) {
-      if (err) {
-        reportUploadStatus(false);
+  fetchBackend("save_track", "POST", formData,
+    function(aResult, aStatusCode) {
+      if (aStatusCode >= 400) {
+        reportUploadStatus(false, aResult);
       }
       else {
         reportUploadStatus(true);
       }
     }
   );
-*/
-
-  // Do an empty POST request first, so that we don't send everything,
-  // then ask for credentials, and then send again.
-  var hXHR = new XMLHttpRequest();
-  hXHR.onreadystatechange = function() {
-    if (hXHR.readyState == 4 && (hXHR.status == 200 || hXHR.status == 400)) {
-      // 400 is Bad Request, but that's expected as this was empty.
-      // So far so good, init actual upload.
-      var XHR = new XMLHttpRequest();
-      XHR.onreadystatechange = function() {
-        if (XHR.readyState == 4 && XHR.status == 200) {
-          // Everthing looks fine.
-          reportUploadStatus(true);
-        } else if (XHR.readyState == 4 && XHR.status != 200) {
-          // Fetched the wrong page or network error...
-          reportUploadStatus(false);
-        }
-      };
-      XHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
-      // Cross-Origin XHR doesn't allow username/password (HTTP Auth).
-      // So, we'll ask the user for entering credentials with rather ugly UI.
-      XHR.withCredentials = true;
-      try {
-        XHR.send(formData); // Send actual form data.
-      }
-      catch (e) {
-        reportUploadStatus(false, e);
-      }
-    } else if (hXHR.readyState == 4 && hXHR.status != 200) {
-      // Fetched the wrong page or network error...
-      reportUploadStatus(false);
-    }
-  };
-  hXHR.open("POST", gOSMAPIURL + "api/0.6/gpx/create", true);
-  // Cross-Origin XHR doesn't allow username/password (HTTP Auth).
-  // So, we'll ask the user for entering credentials with rather ugly UI.
-  hXHR.withCredentials = true;
-  try {
-    hXHR.send(); // Empty request, see above.
-  }
-  catch (e) {
-    reportUploadStatus(false, e);
-  }
 }
 
 function reportUploadStatus(aSuccess, aMessage) {
