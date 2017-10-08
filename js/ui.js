@@ -67,6 +67,8 @@ window.onload = function() {
     gAuthClientID += "-dev";
   }
 
+  document.getElementById("libCloseButton").onclick = hideLibrary;
+
   // Set up the login area.
   document.getElementById("loginbtn").onclick = startLogin;
   document.getElementById("logoutbtn").onclick = doLogout;
@@ -201,6 +203,7 @@ function displayLogin() {
   document.getElementById("username").classList.remove("hidden");
   document.getElementById("username").textContent = userData.email;
   document.getElementById("uploadTrackButton").disabled = false;
+  document.getElementById("libraryShowLine").classList.remove("hidden");
   document.getElementById("logoutbtn").classList.remove("hidden");
 }
 
@@ -209,6 +212,7 @@ function displayLogout() {
   document.getElementById("username").classList.add("hidden");
   document.getElementById("username").textContent = "";
   document.getElementById("uploadTrackButton").disabled = true;
+  document.getElementById("libraryShowLine").classList.add("hidden");
   document.getElementById("loginbtn").classList.remove("hidden");
   document.getElementById("logindesc").classList.remove("hidden");
 }

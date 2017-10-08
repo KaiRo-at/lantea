@@ -17,6 +17,7 @@ h1 {
 }
 
 #dialogArea,
+#libraryArea,
 .overlayArea {
   position: absolute;
   z-index: 5;
@@ -25,6 +26,7 @@ h1 {
 }
 
 #dialogArea.hidden,
+#libraryArea.hidden,
 .overlayArea.hidden {
   opacity: 0;
   transition-duration: 1s;
@@ -32,6 +34,7 @@ h1 {
 }
 
 #dialogArea:-moz-system-metric(touch-enabled),
+#libraryArea.hidden:-moz-system-metric(touch-enabled),
 .overlayArea:-moz-system-metric(touch-enabled),
 .menuDrawer:-moz-system-metric(touch-enabled) {
   font-size: 3mozmm;
@@ -41,11 +44,15 @@ h1 {
 #dialogArea button,
 #dialogArea input[type="text"],
 #dialogArea select,
+#libraryArea input[type="button"],
+#libraryArea button,
 .overlayArea input[type="button"],
 .overlayArea button,
 .overlayArea select,
 .menuDrawer input[type="button"],
 .menuDrawer button,
+.menuDrawer input[type="text"],
+.menuDrawer input[type="number"],
 .menuDrawer select {
   font-size: inherit;
 }
@@ -418,6 +425,36 @@ h1 {
   margin: .5em 0;
   font-size: .8em;
   opacity: .66;
+}
+
+#libraryArea {
+  top: 1%;
+  bottom: 1%;
+  right: 1%;
+  left: 1%;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, .95);
+  border: 0;
+  margin: auto;
+  padding: .5em;
+  border-radius: 5px;
+}
+
+#libraryArea.hidden {
+  top: -100%;
+  bottom: auto;
+  height: 90%;
+  display: block;
+}
+
+#libButtonLine {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0 0.5em 0.5em;
+  text-align: right;
 }
 
 #uploadDesc {

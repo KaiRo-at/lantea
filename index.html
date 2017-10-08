@@ -10,9 +10,9 @@
        https://developer.mozilla.org/en/Mobile/Viewport_meta_tag -->
   <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Lantea Maps</title>
-  <script src="js/osmauth.js" type="application/javascript;version=1.8"></script>
   <script src="js/map.js" type="application/javascript;version=1.8"></script>
   <script src="js/ui.js" type="application/javascript;version=1.8"></script>
+  <script src="js/library.js" type="application/javascript;version=1.8"></script>
   <script src="js/piwik.js" async="" defer=""></script>
   <link rel="stylesheet" href="style/lantea.css">
   <link rel="shortcut icon" href="style/lanteaIcon16.png" type="image/png">
@@ -38,6 +38,10 @@
        onclick="showUploadDialog();">
 <input type="button" id="clearTrackButton" value="Clear"
        onclick="clearTrack();">
+</p>
+<p id="libraryShowLine" class="hidden">
+<input type="button" id="libraryShowButton" value="View uploaded tracks"
+       onclick="showLibrary();">
 </p>
 <div id="trackDialogArea" class="hidden">
 <div id="uploadDialog">
@@ -142,6 +146,14 @@ upload from multiple devices.</p>
 <div id="noGLwarning">
   Unable to initialize WebGL. You need a browser that supports it.
 </div>
+</div>
+
+<div id="libraryArea" class="hidden">
+The following tracks are saved on the Lantea Maps Server:
+<ul id="libTrackList">
+</ul>
+<p id="libTrackPages" class="hidden"></p>
+<p id="libButtonLine"><button id="libCloseButton">Close</button></p>
 </div>
 
 <p id="action">
