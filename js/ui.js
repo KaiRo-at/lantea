@@ -32,7 +32,7 @@ window.onload = function() {
     mSel.add(opt, null);
   }
 
-  var areas = document.getElementsByClassName("overlayArea");
+  var areas = document.getElementsByClassName("autoFade");
   for (var i = 0; i <= areas.length - 1; i++) {
     areas[i].addEventListener("mouseup", uiEvHandler, false);
     areas[i].addEventListener("mousemove", uiEvHandler, false);
@@ -260,7 +260,7 @@ function initDB(aEvent) {
 
 function showUI() {
   if (gUIHideCountdown <= 0) {
-    var areas = document.getElementsByClassName('overlayArea');
+    var areas = document.getElementsByClassName('autoFade');
     for (var i = 0; i <= areas.length - 1; i++) {
       areas[i].classList.remove("hidden");
     }
@@ -272,7 +272,7 @@ function showUI() {
 function maybeHideUI() {
   gUIHideCountdown--;
   if (gUIHideCountdown <= 0) {
-    var areas = document.getElementsByClassName('overlayArea');
+    var areas = document.getElementsByClassName('autoFade');
     for (var i = 0; i <= areas.length - 1; i++) {
       areas[i].classList.add("hidden");
     }
@@ -295,6 +295,7 @@ function updateTrackInfo() {
 function toggleTrackArea() {
   var fs = document.getElementById("trackArea");
   if (fs.classList.contains("hidden")) {
+    prepareLoginButton();
     fs.classList.remove("hidden");
     showUI();
     gTrackUpdateInterval = setInterval(updateTrackInfo, 1000);
