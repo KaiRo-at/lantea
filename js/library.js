@@ -24,8 +24,14 @@ function showLibrary() {
       else {
         for (var i = 0; i < aResult.length; i++) {
           var litem = document.createElement("li");
-          litem.textContent = aResult[i]["time_created"] + " - " + aResult[i]["comment"] +
-                              (aResult[i]["devicename"] ? " (" + aResult[i]["devicename"] +  ")" : "");
+          litem.textContent = aResult[i]["time_created"] + " - ";
+          var llink = document.createElement("a");
+          llink.setAttribute("href", gBackendURL + "/track_gpx?id=" + aResult[i]["id"]);
+          llink.textContent = aResult[i]["comment"];
+          litem.appendChild(llink);
+          if (aResult[i]["devicename"]) {
+            litem.appendChild(document.createTextNode(" (" + aResult[i]["devicename"] +  ")"));
+          }
           tlist.appendChild(litem);
         }
       }
