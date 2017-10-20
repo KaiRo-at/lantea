@@ -21,7 +21,7 @@
 <noscript><p><img src="https://piwik.kairo.at/piwik.php?idsite=2" style="border:0;" alt="" /></p></noscript>
 <h1>Lantea Map</h1>
 
-<div id="trackArea" class="menuDrawer hidden">
+<div id="trackArea" class="menuDrawer secondaryUI hidden">
 <h2 onclick="toggleTrackArea();">
 <image src="style/track.svg" alt=""> Track
 </h2>
@@ -95,7 +95,7 @@ operator to any other services, e.g. OpenStreetMap.</p>
 </p>
 </div>
 
-<div id="settingsArea" class="menuDrawer hidden">
+<div id="settingsArea" class="menuDrawer secondaryUI hidden">
 <h2 onclick="toggleSettings();">
 <image src="style/settings.svg" alt=""> Settings
 </h2>
@@ -121,14 +121,14 @@ upload from multiple devices.</p>
 </div>
 </div>
 
-<div id="menuArea" class="overlayArea">
-<image src="style/track.svg" id="trackButton" value="Track"
+<div id="menuArea" class="autoFade overlayArea">
+<image src="style/track.svg" class="controlButton" id="trackButton" value="Track"
        onclick="toggleTrackArea();"><br/>
-<image src="style/settings.svg" id="settingsButton" alt="Settings"
+<image src="style/settings.svg" class="controlButton" id="settingsButton" alt="Settings"
        onclick="toggleSettings();"><br/>
 </div>
 
-<div id="zoomArea" class="overlayArea">
+<div id="zoomArea" class="autoFade overlayArea">
 <input type="button" id="zoomInButton" value="+"
        onclick="zoomIn();">
 <p id="zoomLevel">Z</p>
@@ -136,31 +136,31 @@ upload from multiple devices.</p>
        onclick="zoomOut();">
 </div>
 
-<div id="fullscreenArea" class="overlayArea">
+<div id="fullscreenArea" class="autoFade overlayArea">
 <!-- other possible characters: &#x25F0; -->
 <input type="button" id="fullscreenButton" value="&#x25A3;"
        onclick="toggleFullscreen();">
 </div>
 
-<div id="dialogArea" class="hidden">
+<div id="dialogArea" class="overlayArea hidden">
 <div id="noGLwarning">
   Unable to initialize WebGL. You need a browser that supports it.
 </div>
 </div>
 
-<div id="libraryArea" class="hidden">
+<div id="libraryArea" class="overlayArea fullScreenOverlay secondaryUI hidden">
 The following tracks are saved on the Lantea Maps Server:
 <ul id="libTrackList">
 </ul>
 <p id="libTrackPages" class="hidden"></p>
-<p id="libButtonLine"><button id="libCloseButton">Close</button></p>
+<p class="closeButtonContainer"><button id="libCloseButton" class="closeButton">X</button></p>
 </div>
 
 <p id="action">
   <img id="actionimg" src="style/loading_action.png">
   <span id="actionlabel">Loading</span>&hellip;
 </p>
-<p id="copyright" class="overlayArea"></p>
+<p id="copyright" class="autoFade overlayArea"></p>
 
 <canvas id="map" width="500" height="500">
   Please use a browser that supports &lt;canvas&gt; elements.

@@ -16,45 +16,39 @@ h1 {
   display: none;
 }
 
-#dialogArea,
-#libraryArea,
-.overlayArea {
+.debugHide {
+  display: none;
+}
+
+/* Main window UI areas */
+#map, #track {
+  position: fixed;
+  border: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#map {
+  z-index: 1;
+}
+
+#track {
+  z-index: 3;
+}
+
+.autoFade {
   position: absolute;
   z-index: 5;
   transition-property: opacity;
   transition-duration: .2s;
 }
 
-#dialogArea.hidden,
-#libraryArea.hidden,
-.overlayArea.hidden {
+.autoFade.hidden {
   opacity: 0;
   transition-duration: 1s;
   display: block;
-}
-
-#dialogArea:-moz-system-metric(touch-enabled),
-#libraryArea.hidden:-moz-system-metric(touch-enabled),
-.overlayArea:-moz-system-metric(touch-enabled),
-.menuDrawer:-moz-system-metric(touch-enabled) {
-  font-size: 3mozmm;
-}
-
-#dialogArea input[type="button"],
-#dialogArea button,
-#dialogArea input[type="text"],
-#dialogArea select,
-#libraryArea input[type="button"],
-#libraryArea button,
-.overlayArea input[type="button"],
-.overlayArea button,
-.overlayArea select,
-.menuDrawer input[type="button"],
-.menuDrawer button,
-.menuDrawer input[type="text"],
-.menuDrawer input[type="number"],
-.menuDrawer select {
-  font-size: inherit;
 }
 
 #menuArea {
@@ -69,10 +63,8 @@ h1 {
   text-align: center;
 }
 
-#zoomArea > input[type="button"],
-#fullscreenArea > input[type="button"],
-#trackButton,
-#settingsButton {
+.autoFade > input[type="button"],
+.autoFade > .controlButton {
   font-size: 1.2em;
   font-weight: bold;
   width: 2em;
@@ -88,24 +80,18 @@ h1 {
   border: 2px solid #0000FF;
 }
 
-#zoomArea > input[type="button"]:hover,
-#fullscreenArea > input[type="button"]:hover,
-#trackButton:hover,
-#settingsButton:hover {
+.autoFade > input[type="button"]:hover,
+.autoFade > .controlButton:hover {
   background-color: rgba(255, 255, 255, .8);
 }
 
-#zoomArea > input[type="button"]:active,
-#fullscreenArea > input[type="button"]:active,
-#trackButton:active,
-#settingsButton:active {
+.autoFade > input[type="button"]:active,
+.autoFade > .controlButton:active {
   background-color: rgba(255, 255, 127, .8);
 }
 
-#zoomArea > input[type="button"]:focus,
-#fullscreenArea > input[type="button"]:focus,
-#trackButton:focus,
-#settingsButton:focus {
+.autoFade > input[type="button"]:focus,
+.autoFade > .controlButton:focus {
   background-color: rgba(255, 255, 255, .5);
 }
 
@@ -123,15 +109,63 @@ h1 {
   margin: 2px 0;
 }
 
+#action {
+  position: absolute;
+  bottom: 5px;
+  left: .5em;
+  margin: 0;
+  z-index: 3;
+  background-color: rgba(255, 255, 255, .8);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+#actionimg {
+  vertical-align: text-bottom;
+}
+
+#copyright {
+  bottom: 5px;
+  right: .5em;
+  margin: 0;
+  font-size: .8em;
+  opacity: .66;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+#copyright.hidden {
+  opacity: 0;
+  display: block;
+}
+
+.overlayArea:-moz-system-metric(touch-enabled),
+.menuDrawer:-moz-system-metric(touch-enabled) {
+  font-size: 3mozmm;
+}
+
+.overlayArea input[type="button"],
+.overlayArea button,
+.overlayArea select,
+.menuDrawer input[type="button"],
+.menuDrawer button,
+.menuDrawer input[type="text"],
+.menuDrawer input[type="number"],
+.menuDrawer select {
+  font-size: inherit;
+}
+
+/* Menu Drawers */
 .menuDrawer {
   position: absolute;
   top: 0;
   bottom: 0;
+  overflow: auto;
   transform: translateX(calc(-40ch - 1ch)); /* account for padding */
   width: 40ch;
   max-width: 95%; /* make sure we don't overflow the screen */
-  background-color: rgba(15, 15, 15, .9);
-  color: #CCCCCC;
   border: 0;
   padding: 0 .5ch; /* account for legend */
   margin: 0;
@@ -183,155 +217,15 @@ h1 {
   font-size: .75em;
 }
 
-/* Custom checkbox design */
-.menuDrawer input[type="checkbox"] {
-  display: none;
-}
-
-.menuDrawer input[type="checkbox"] + label:before {
-  content: '\00A0'; /* non-breaking space */
-  display: inline-block;
-  width: 1.2em;
-  height: 1.2em;
-  margin-right: .3em;
-  text-align: center;
-  vertical-align: middle;
-  background-color: rgba(204, 204, 204, .2);
-  border: 1px solid #CCCCCC;
-  border-radius: 3px;
-}
-
-.menuDrawer input[type="checkbox"]:hover + label:before {
-  background-color: rgba(204, 204, 204, .4);
-  border: 1px solid #FFFFFF;
-}
-.menuDrawer input[type="checkbox"]:hover + label {
-  color: #FFFFFF;
-  position:relative;
-  height: 1.2em;
-}
-
-.menuDrawer input[type="checkbox"]:active + label:before {
-  background-color: rgba(204, 204, 255, .3);
-  border: 1px solid #FFCCAA;
-}
-.menuDrawer input[type="checkbox"]:active + label {
-  color: #FFCCAA;
-}
-
-.menuDrawer input[type="checkbox"]:checked + label:before {
-  content: '\2714'; /* tick mark */
-}
-
-/* Custom button design */
-.menuDrawer input[type="button"],
-.menuDrawer button {
-  text-align: center;
-  vertical-align: middle;
-  background-image: none;
-  background-color: rgba(204, 204, 204, .2);
-  color: #CCCCCC;
-  padding: 1px .5em;
-  border: 1px solid #CCCCCC;
-  border-radius: 3px;
-}
-
-.menuDrawer input[type="button"]:disabled,
-.menuDrawer button:disabled {
-  background-color: rgba(204, 204, 204, .1);
-  color: rgba(204, 204, 204, .5);
-  border: 1px solid rgba(255, 255, 255, .5);
-}
-
-.menuDrawer input[type="button"]:not(:disabled):hover,
-.menuDrawer button:not(:disabled):hover {
-  background-color: rgba(204, 204, 204, .4);
-  border: 1px solid #FFFFFF;
-}
-
-.menuDrawer input[type="button"]:not(:disabled):active,
-.menuDrawer button:not(:disabled):active {
-  background-color: rgba(204, 204, 255, .3);
-  color: #FFCCAA;
-  padding-top: 2px;
-  padding-right: calc(.5em - 1px);
-  padding-bottom: 0;
-  padding-left: calc(.5em + 1px);
-}
-
-/* Custom select design */
-.menuDrawer select {
-  text-align: left;
-  vertical-align: middle;
-  background-image: none;
-  background-color: rgba(204, 204, 204, .2);
-  color: #CCCCCC;
-  padding: 0 .5em;
-  border: 1px solid #CCCCCC;
-  border-radius: 3px;
-}
-
-.menuDrawer select:hover {
-  background-color: rgba(204, 204, 204, .4);
-  border: 1px solid #FFFFFF;
-}
-
-.menuDrawer select:active {
-  background-color: rgba(204, 204, 255, .3);
-  color: #FFCCAA;
-}
-
-.menuDrawer option:checked:not(:hover) {
-  background-color: rgba(204, 204, 204, .1);
-}
-
-.menuDrawer option:hover {
-  background-color: #CCCCCC;
-  color: #404040;
-}
-
-.menuDrawer input[type="text"],
-.menuDrawer input[type="number"] {
-  font-size: 1em;
-  vertical-align: middle;
-  background-image: none;
-  background-color: rgba(204, 204, 204, .7);
-  color: #404040;
-  padding: 1px .5em;
-  border: 1px solid #CCCCCC;
-  border-radius: 3px;
-}
-
-.menuDrawer input[type="text"] {
-  text-align: left;
-}
-
-.menuDrawer input[type="number"] {
-  text-align: right;
-}
-
-.menuDrawer input[type="text"]:disabled,
-.menuDrawer input[type="number"]:disabled {
-  background-color: rgba(204, 204, 204, .1);
-  color: rgba(204, 204, 204, .5);
-  border: 1px solid rgba(255, 255, 255, .5);
-}
-
-.menuDrawer input[type="text"]:not(:disabled):hover,
-.menuDrawer input[type="number"]:not(:disabled):hover {
-  border: 1px solid #FFFFFF;
-}
-
-.menuDrawer input[type="text"]:not(:disabled):focus,
-.menuDrawer input[type="number"]:not(:disabled):focus {
-  background-color: rgba(204, 204, 255, .8);
-  border: 1px solid #FFFFFF;
-  color: #202020;
-}
-
-.menuDrawer p.subTitle {
-  margin: .75em 0 .5em;
+.dialogTitle {
+  margin: 0 0 .5em;
   font-weight: bold;
+}
+
+.dialogHelp {
+  margin: .5em 0;
+  font-size: .8em;
+  opacity: .66;
 }
 
 #trackData {
@@ -344,59 +238,182 @@ h1 {
   padding: 3px 0;
 }
 
-#map, #track {
-  position: fixed;
-  border: 0;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+#uploadDesc {
+  max-width: 95%;
 }
 
-#map {
-  z-index: 1;
+/* Secondary UI: menu drawers, full screen overlays, etc. */
+.secondaryUI {
+  background-color: rgba(15, 15, 15, .9);
+  color: #CCCCCC;
 }
 
-#track {
-  z-index: 3;
-}
-
-#action {
-  position: absolute;
-  bottom: 5px;
-  left: .5em;
-  margin: 0;
-  z-index: 3;
-  background-color: rgba(255, 255, 255, .8);
-  border-radius: 3px;
-  padding: 0 3px;
-}
-
-#actionimg {
-  vertical-align: text-bottom;
-}
-
-.debugHide {
+/* Custom checkbox design */
+.secondaryUI input[type="checkbox"] {
   display: none;
 }
 
-#copyright {
-  bottom: 5px;
-  right: .5em;
-  margin: 0;
-  font-size: .8em;
-  opacity: .66;
-  z-index: 2;
-  background-color: rgba(255, 255, 255, 1);
+.secondaryUI input[type="checkbox"] + label:before {
+  content: '\00A0'; /* non-breaking space */
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: .3em;
+  text-align: center;
+  vertical-align: middle;
+  background-color: rgba(204, 204, 204, .2);
+  border: 1px solid #CCCCCC;
   border-radius: 3px;
-  padding: 0 3px;
 }
 
-#copyright.hidden {
-  opacity: 0;
-  display: block;
+.secondaryUI input[type="checkbox"]:hover + label:before {
+  background-color: rgba(204, 204, 204, .4);
+  border: 1px solid #FFFFFF;
+}
+.secondaryUI input[type="checkbox"]:hover + label {
+  color: #FFFFFF;
+  position:relative;
+  height: 1.2em;
 }
 
+.secondaryUI input[type="checkbox"]:active + label:before {
+  background-color: rgba(204, 204, 255, .3);
+  border: 1px solid #FFCCAA;
+}
+.secondaryUI input[type="checkbox"]:active + label {
+  color: #FFCCAA;
+}
+
+.secondaryUI input[type="checkbox"]:checked + label:before {
+  content: '\2714'; /* tick mark */
+}
+
+/* Custom button design */
+.secondaryUI input[type="button"],
+.secondaryUI button {
+  text-align: center;
+  vertical-align: middle;
+  background-image: none;
+  background-color: rgba(204, 204, 204, .2);
+  color: #CCCCCC;
+  padding: 1px .5em;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.secondaryUI input[type="button"]:disabled,
+.secondaryUI button:disabled {
+  background-color: rgba(204, 204, 204, .1);
+  color: rgba(204, 204, 204, .5);
+  border: 1px solid rgba(255, 255, 255, .5);
+}
+
+.secondaryUI input[type="button"]:not(:disabled):hover,
+.secondaryUI button:not(:disabled):hover {
+  background-color: rgba(204, 204, 204, .4);
+  border: 1px solid #FFFFFF;
+}
+
+.secondaryUI input[type="button"]:not(:disabled):active,
+.secondaryUI button:not(:disabled):active {
+  background-color: rgba(204, 204, 255, .3);
+  color: #FFCCAA;
+  padding-top: 2px;
+  padding-right: calc(.5em - 1px);
+  padding-bottom: 0;
+  padding-left: calc(.5em + 1px);
+}
+
+/* Custom select design */
+.secondaryUI select {
+  text-align: left;
+  vertical-align: middle;
+  background-image: none;
+  background-color: rgba(204, 204, 204, .2);
+  color: #CCCCCC;
+  padding: 0 .5em;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.secondaryUI select:hover {
+  background-color: rgba(204, 204, 204, .4);
+  border: 1px solid #FFFFFF;
+}
+
+.secondaryUI select:active {
+  background-color: rgba(204, 204, 255, .3);
+  color: #FFCCAA;
+}
+
+.secondaryUI option:checked:not(:hover) {
+  background-color: rgba(204, 204, 204, .1);
+}
+
+.secondaryUI option:hover {
+  background-color: #CCCCCC;
+  color: #404040;
+}
+
+/* Custom textbox design */
+.secondaryUI input[type="text"],
+.secondaryUI input[type="number"] {
+  font-size: 1em;
+  vertical-align: middle;
+  background-image: none;
+  background-color: rgba(204, 204, 204, .7);
+  color: #404040;
+  padding: 1px .5em;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px;
+}
+
+.secondaryUI input[type="text"] {
+  text-align: left;
+}
+
+.secondaryUI input[type="number"] {
+  text-align: right;
+}
+
+.secondaryUI input[type="text"]:disabled,
+.secondaryUI input[type="number"]:disabled {
+  background-color: rgba(204, 204, 204, .1);
+  color: rgba(204, 204, 204, .5);
+  border: 1px solid rgba(255, 255, 255, .5);
+}
+
+.secondaryUI input[type="text"]:not(:disabled):hover,
+.secondaryUI input[type="number"]:not(:disabled):hover {
+  border: 1px solid #FFFFFF;
+}
+
+.secondaryUI input[type="text"]:not(:disabled):focus,
+.secondaryUI input[type="number"]:not(:disabled):focus {
+  background-color: rgba(204, 204, 255, .8);
+  border: 1px solid #FFFFFF;
+  color: #202020;
+}
+
+/* custom style for paragraphs and links */
+.secondaryUI p.subTitle {
+  margin: .75em 0 .5em;
+  font-weight: bold;
+}
+
+.secondaryUI a:link {
+  color: #DDDDDD;
+}
+
+.secondaryUI a:visited {
+  color: #AAAAAA;
+}
+
+.secondaryUI a:hover {
+  color: #FFFFFF;
+}
+
+/* dialog area - only used for loading error */
 #dialogArea {
   top: 20%;
   right: 0;
@@ -416,51 +433,43 @@ h1 {
   display: block;
 }
 
-.dialogTitle {
-  margin: 0 0 .5em;
-  font-weight: bold;
-}
-
-.dialogHelp {
-  margin: .5em 0;
-  font-size: .8em;
-  opacity: .66;
-}
-
-#libraryArea {
+/* full screen overlay - library, etc. */
+.fullScreenOverlay {
+  position: absolute;
   top: 1%;
   bottom: 1%;
   right: 1%;
   left: 1%;
   z-index: 10;
-  background-color: rgba(255, 255, 255, .95);
+  background-color: rgba(15, 15, 15, 1.0);
   border: 0;
   margin: auto;
   padding: .5em;
   border-radius: 5px;
 }
 
-#libraryArea.hidden {
+.fullScreenOverlay.hidden {
   top: -100%;
   bottom: auto;
   height: 90%;
   display: block;
 }
 
-#libButtonLine {
+.fullScreenOverlay > .closeButtonContainer {
   position: absolute;
-  bottom: 0;
-  left: 0;
+  top: 0;
   right: 0;
   margin: 0;
-  padding: 0 0.5em 0.5em;
+  padding: 0.5em;
   text-align: right;
 }
-
-#uploadDesc {
-  max-width: 95%;
+/*
+.fullScreenOverlay > .closeButtonContainer > .closeButton {
+  font-size: 2em;
 }
+*/
 
+/* small screen media adaptations */
 @media screen and (max-width: 500px),
        screen and (max-height: 500px) {
   body {
