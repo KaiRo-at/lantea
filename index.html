@@ -66,7 +66,7 @@ operator to any other services, e.g. OpenStreetMap.</p>
 </p>
 </div>
 <div id="uploadStatus">
-<p class="dialogTitle">Track Upload to Lantea Maps Server</p>
+<p class="subTitle">Track Upload to Lantea Maps Server</p>
 <p id="uploadInProgress"><img id="actionimg" src="style/loading_action.png">
   Upload in progress&hellip;</p>
 <p id="uploadSuccess" style="display:none;">Track upload successful!</p>
@@ -145,6 +145,40 @@ upload from multiple devices.</p>
 <div id="dialogArea" class="overlayArea hidden">
 <div id="noGLwarning">
   Unable to initialize WebGL. You need a browser that supports it.
+</div>
+<div id="firstRunIntro">
+<p class="dialogTitle">Welcome to Lantea Maps!</p>
+<p>This web app lets you record GPS tracks of your journeys, which you can
+   upload to our backend servers and download as GPX files.</p>
+<p>You can find track details, upload, etc. in the "track" drawer that you can
+   access via the <image src="style/track.svg"> icon at the left top of the
+   window.</p>
+<p>Right underneath that icon, you find <image src="style/settings.svg">
+   settings.</p>
+<p>Both track and settings "drawers" can be closed by clicking/tapping on their
+   title line.</p>
+<p>From the track "drawer", you can also access a library of uploaded tracks,
+   their name/comment links to the GPX download of the specific track.</p>
+<p class="dialogButtonLine">
+  <button id="firstRunDialogCloseButton"
+          onclick="closeDialog();">Close</button>
+</p>
+</div>
+<div id="infoDialog">
+<p class="dialogTitle">Lantea Maps has changed!</p>
+<p>Lantea Maps has been updated with a few significant changes.</p>
+<p>Most importantly, the previously broken upload functionality for tracks has
+   been fixed and improved to use our own Lantea Maps server instead of
+   OpenStreetMaps. For using it, you need to log in with KaiRo.at via their
+   "sign in" button now in the track "drawer".</p>
+<p>From there, you can also access a library of uploaded tracks, their
+   name/comment links to the GPX download of the specific track.</p>
+<p>If you set a device name in the settings, you can even distinguish tracks
+   uploaded to the same account by different devices you're using.</p>
+<p class="dialogButtonLine">
+  <button id="firstRunDialogCloseButton"
+          onclick="closeDialog();">Close</button>
+</p>
 </div>
 </div>
 

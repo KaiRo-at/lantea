@@ -219,11 +219,6 @@ h1 {
   font-size: .75em;
 }
 
-.dialogTitle {
-  margin: 0 0 .5em;
-  font-weight: bold;
-}
-
 .dialogHelp {
   margin: .5em 0;
   font-size: .8em;
@@ -415,12 +410,13 @@ h1 {
   color: #FFFFFF;
 }
 
-/* dialog area - only used for loading error */
+/* dialog area - for loading error and welcome messages */
 #dialogArea {
+  position: absolute;
   top: 20%;
   right: 0;
   left: 0;
-  width: 30ch;
+  width: 50ch;
   max-width: 92%;
   z-index: 10;
   background-color: rgba(255, 255, 255, .8);
@@ -431,8 +427,17 @@ h1 {
 }
 
 #dialogArea.hidden {
-  top: -100%;
+  top: -1000%;
   display: block;
+}
+
+.dialogTitle {
+  margin: 0 0 .5em;
+  font-weight: bold;
+}
+
+.dialogButtonLine {
+  text-align: center;
 }
 
 /* full screen overlay - library, etc. */

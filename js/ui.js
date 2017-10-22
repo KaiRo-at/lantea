@@ -8,6 +8,7 @@ window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequest
 
 var mainDB;
 var gAppInitDone = false;
+var firstRun = false;
 var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gTrackUpdateInterval;
@@ -101,6 +102,17 @@ function postInit(aEvent) {
       document.getElementById("uploadDevName").value = aValue;
     }
   });
+  if (firstRun) {
+    showFirstRunDialog();
+  }
+  else {
+    gPrefs.get("lastInfoShown", function(aValue) {
+      if (!aValue || !parseInt(aValue) || parseInt(aValue) < 1) {
+        showInfoDialog();
+      }
+    });
+  }
+  gPrefs.set("lastInfoShown", 1);
 }
 
 window.onresize = function() {
@@ -241,6 +253,7 @@ function initDB(aEvent) {
     if (!mainDB.objectStoreNames.contains("prefs")) {
       // Create a "prefs" objectStore.
       var prefsStore = mainDB.createObjectStore("prefs");
+      firstRun = true;
     }
     if (!mainDB.objectStoreNames.contains("track")) {
       // Create a "track" objectStore.
@@ -352,6 +365,11 @@ function showUploadDialog() {
   dia.classList.remove("hidden");
 }
 
+function cancelTrackDialog() {
+  document.getElementById("trackDialogArea").classList.add("hidden");
+  document.getElementById("uploadTrackButton").disabled = false;
+}
+
 function showGLWarningDialog() {
   var dia = document.getElementById("dialogArea");
   var areas = dia.children;
@@ -362,9 +380,28 @@ function showGLWarningDialog() {
   dia.classList.remove("hidden");
 }
 
-function cancelTrackDialog() {
-  document.getElementById("trackDialogArea").classList.add("hidden");
-  document.getElementById("uploadTrackButton").disabled = false;
+function showFirstRunDialog() {
+  var dia = document.getElementById("dialogArea");
+  var areas = dia.children;
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].style.display = "none";
+  }
+  document.getElementById("firstRunIntro").style.display = "block";
+  dia.classList.remove("hidden");
+}
+
+function closeDialog() {
+  document.getElementById("dialogArea").classList.add("hidden");
+}
+
+function showInfoDialog() {
+  var dia = document.getElementById("dialogArea");
+  var areas = dia.children;
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].style.display = "none";
+  }
+  document.getElementById("infoDialog").style.display = "block";
+  dia.classList.remove("hidden");
 }
 
 var uiEvHandler = {
