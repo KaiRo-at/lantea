@@ -21,6 +21,11 @@ function showLibrary() {
         litem.textContent = "Error: " + aResult;
         tlist.appendChild(litem);
       }
+      else if (!aResult.length) {
+        var litem = document.createElement("li");
+        litem.textContent = "No tracks uploaded yet.";
+        tlist.appendChild(litem);
+      }
       else {
         for (var i = 0; i < aResult.length; i++) {
           var litem = document.createElement("li");
