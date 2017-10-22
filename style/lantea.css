@@ -442,7 +442,6 @@ h1 {
   bottom: 1%;
   right: 1%;
   left: 1%;
-  overflow: auto;
   z-index: 10;
   background-color: rgba(15, 15, 15, 1.0);
   border: 0;
@@ -471,6 +470,26 @@ h1 {
   font-size: 2em;
 }
 */
+
+.fullScreenOverlay p {
+  margin: 0.5em 0;
+}
+
+.fullScreenOverlay > p:first-child {
+  margin-top: 0;
+  /* leave space for close button */
+  margin-right: 1.5em;
+}
+
+#libTrackList {
+  overflow: auto;
+  /* 2em is top/bottom margin, and one line is shown above and below, with .5em margin each */
+  height: calc(100% - 5em);
+}
+
+#libTrackPages {
+  margin-bottom: 0;
+}
 
 /* small screen media adaptations */
 @media screen and (max-width: 500px),
