@@ -24,7 +24,7 @@ function showLibrary() {
       else {
         for (var i = 0; i < aResult.length; i++) {
           var litem = document.createElement("li");
-          litem.textContent = aResult[i]["time_created"] + " - ";
+          litem.textContent = dtformat(aResult[i]["time_created"]) + " - ";
           var llink = document.createElement("a");
           llink.setAttribute("href", gBackendURL + "/track_gpx?id=" + aResult[i]["id"]);
           llink.textContent = aResult[i]["comment"];
@@ -41,5 +41,17 @@ function showLibrary() {
 
 function hideLibrary() {
   document.getElementById("libraryArea").classList.add("hidden");
+}
+
+function dtformat(aUnixTimestamp) {
+  // Library display time format: YYYY-MM-DD HH:mm
+  // Note that JS has millisecond timestamps while standard/unix has seconds.
+  var tsDate = new Date(aUnixTimestamp * 1000);
+  // Note that .getUTCMonth() returns a number between 0 and 11 (0 for January)!
+  return tsDate.getUTCFullYear() + "-" +
+         (tsDate.getUTCMonth() < 9 ? "0" : "") + (tsDate.getUTCMonth() + 1 ) + "-" +
+         (tsDate.getUTCDate() < 10 ? "0" : "") + tsDate.getUTCDate() + " " +
+         (tsDate.getUTCHours() < 10 ? "0" : "") + tsDate.getUTCHours() + ":" +
+         (tsDate.getUTCMinutes() < 10 ? "0" : "") + tsDate.getUTCMinutes();
 }
 
