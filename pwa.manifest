@@ -1,0 +1,31 @@
+{
+  "name": "Lantea Maps",
+  "short_name": "Lantea",
+  "description": "Display maps and record (GPS) tracks of your location.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#CCCCCC",
+  "icons": {
+    "16": "/style/lanteaIcon16.png",
+    "32": "/style/lanteaIcon32.png",
+    "64": "/style/lanteaIcon64.png",
+    "128": "/style/lanteaIcon128.png"
+  }
+  "icons": [{
+    "src": "/style/lanteaIcon16.png",
+    "sizes": "16x16",
+    "type": "image/png"
+  }, {
+    "src": "/style/lanteaIcon32.png",
+    "sizes": "32x32",
+    "type": "image/png"
+  }, {
+    "src": "/style/lanteaIcon64.png",
+    "sizes": "64x64",
+    "type": "image/png"
+  }, {
+    "src": "/style/lanteaIcon128.png",
+    "sizes": "128x128",
+    "type": "image/png"
+  }]
+}
