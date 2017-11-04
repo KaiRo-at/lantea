@@ -2,7 +2,7 @@
   "name": "Lantea Maps",
   "short_name": "Lantea",
   "description": "Display maps and record (GPS) tracks of your location.",
-  "start_url": "/index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#CCCCCC",
   "icons": {
@@ -10,7 +10,7 @@
     "32": "/style/lanteaIcon32.png",
     "64": "/style/lanteaIcon64.png",
     "128": "/style/lanteaIcon128.png"
-  }
+  },
   "icons": [{
     "src": "/style/lanteaIcon16.png",
     "sizes": "16x16",
