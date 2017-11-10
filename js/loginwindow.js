@@ -17,3 +17,11 @@ window.onload = function() {
     document.getElementById("logininfo").textContent = "You have called this document outside of the login flow, which is not supported.";
   }
 }
+
+function getParameterByName(aName) {
+  // from http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+  name = aName.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+      results = regex.exec(location.search);
+  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}

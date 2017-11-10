@@ -704,11 +704,3 @@ function fetchBackend(aEndpoint, aMethod, aSendData, aCallback, aCallbackForward
     aCallback(e, 500, aCallbackForwards);
   }
 }
-
-function getParameterByName(aName) {
-  // from http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
-  name = aName.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-      results = regex.exec(location.search);
-  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-}
