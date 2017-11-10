@@ -17,11 +17,6 @@ var gBackendURL = "https://backend.lantea.kairo.at";
 var gAuthClientID = "lantea";
 
 window.onload = function() {
-  if (/\/login\.html/.test(window.location)) {
-    // If we are in the login window, call a function to complete the process and don't do anything else here.
-    completeLoginWindow();
-    return;
-  }
   gAction = document.getElementById("action");
   gActionLabel = document.getElementById("actionlabel");
 
@@ -173,16 +168,6 @@ function prepareLoginButton(aCallback) {
       },
       {}
   );
-}
-
-function completeLoginWindow() {
-  if (window.opener) {
-    window.opener.finishLogin(getParameterByName("code"), getParameterByName("state"));
-    window.close();
-  }
-  else {
-    document.getElementById("logininfo").textContent = "You have called this document outside of the login flow, which is not supported.";
-  }
 }
 
 function finishLogin(aCode, aState) {
