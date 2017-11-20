@@ -527,21 +527,31 @@ function uploadTrack() {
       if (aStatusCode >= 400) {
         reportUploadStatus(false, aResult);
       }
-      else {
+      else if (aResult["id"]) {
         reportUploadStatus(true);
+      }
+      else { // If no ID is returned, we assume a general error.
+        reportUploadStatus(false);
       }
     }
   );
 }
 
-function reportUploadStatus(aSuccess, aMessage) {
+function reportUploadStatus(aSuccess, aResponse) {
   document.getElementById("uploadStatusCloseButton").disabled = false;
   document.getElementById("uploadInProgress").style.display = "none";
   if (aSuccess) {
     document.getElementById("uploadSuccess").style.display = "block";
   }
-  else if (aMessage) {
-    document.getElementById("uploadErrorMsg").textContent = aMessage;
+  else if (aResponse["message"]) {
+    document.getElementById("uploadErrorMsg").textContent = aResponse["message"];
+    if (aResponse["errortype"]) {
+      document.getElementById("uploadErrorMsg").textContent += " (" + aResponse["errortype"] + ")";
+    }
+    document.getElementById("uploadError").style.display = "block";
+  }
+  else if (aResponse) {
+    document.getElementById("uploadErrorMsg").textContent = aResponse;
     document.getElementById("uploadError").style.display = "block";
   }
   else {
