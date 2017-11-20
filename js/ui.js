@@ -528,7 +528,7 @@ function reportUploadStatus(aSuccess, aResponse) {
   if (aSuccess) {
     document.getElementById("uploadSuccess").style.display = "block";
   }
-  else if (aResponse["message"]) {
+  else if (aResponse && aResponse["message"]) {
     document.getElementById("uploadErrorMsg").textContent = aResponse["message"];
     if (aResponse["errortype"]) {
       document.getElementById("uploadErrorMsg").textContent += " (" + aResponse["errortype"] + ")";
