@@ -13,6 +13,7 @@ var gUIHideCountdown = 0;
 var gWaitCounter = 0;
 var gTrackUpdateInterval;
 var gAction, gActionLabel;
+var authData = null, userData = null;
 var gBackendURL = "https://backend.lantea.kairo.at";
 var gAuthClientID = "lantea";
 
@@ -68,13 +69,9 @@ window.onload = function() {
   // Set up the login area.
   document.getElementById("loginbtn").onclick = startLogin;
   document.getElementById("logoutbtn").onclick = doLogout;
-  prepareLoginButton(function() {
-    // Anything that needs the backend should only be triggered from in here.
-    // That makes sure that the first call the the backend is oauth_state and no other is running in parallel.
-    // If we call multiple backend methods at once and no session is open, we create multiple sessions, which calls for confusion later on.
-
-    // Call any UI preparation that needs the backend.
-  });
+  // Put in a logged-out state by default.
+  // Opening the track drawer will update this correctly.
+  displayLogout();
 
   gAction.addEventListener("dbinit-done", initMap, false);
   gAction.addEventListener("mapinit-done", postInit, false);
@@ -115,6 +112,19 @@ window.onresize = function() {
 }
 
 function startLogin() {
+  if (!authData || !authData["state"]) {
+    // We have no oAuth state, try to fetch it and call ourselves again if it worked.
+    prepareLoginButton(function() {
+      if (authData && authData["state"]) {
+        startLogin();
+      }
+      else if (!userData) {
+        // Only warn if we didn't actually end up being logged in.
+        console.log("No OAuth state and fetching fails, client or server may be offline.");
+      }
+    });
+    return;
+  }
   var authURL = authData["url"] + "authorize?response_type=code&client_id=" + gAuthClientID + "&scope=email" +
                 "&state=" + authData["state"] + "&redirect_uri=" + encodeURIComponent(getRedirectURI());
   if (window.open(authURL, "KaiRoAuth", 'height=450,width=600')) {
