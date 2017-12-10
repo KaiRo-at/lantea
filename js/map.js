@@ -1230,6 +1230,24 @@ function clearTrack() {
   drawTrack();
 }
 
+function loadTrack(aTrackId) {
+  fetchBackend("track_json?id=" + encodeURIComponent(aTrackId), "GET", null,
+    function(aResult, aStatusCode) {
+      if (aStatusCode >= 400 || !aResult) {
+        console.log("loading track failed: " + aStatusCode + ", result: " + aResult.message);
+      }
+      else {
+        console.log("loading track with " + aResult.length + " points.");
+        gTrack = aResult;
+        for (var i = 0; i < gTrack.length; i++) {
+          try { gTrackStore.push(gTrack[i]); } catch(e) {}
+        }
+        drawTrack();
+      }
+    }
+  );
+}
+
 var gTileService = {
   objStore: "tilecache",
 
