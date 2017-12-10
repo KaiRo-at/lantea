@@ -722,10 +722,20 @@ function drawTrack() {
 function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
   var trackpoint = gps2xy(aLatitude, aLongitude);
   // lastPoint is for optimizing (not actually executing the draw until the last)
+  trackpoint.segmentEnd = (lastPoint === true);
   trackpoint.optimized = (lastPoint === false);
-  var mappos = {x: Math.round((trackpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                y: Math.round((trackpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
-
+  trackpoint.mappos = {x: Math.round((trackpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                       y: Math.round((trackpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+  if (gLastDrawnPoint) {
+    // Lines completely outside the current display should not be drawn.
+    trackpoint.skip_drawing = false;
+    if ((trackpoint.mappos.x < 0 && gLastDrawnPoint.mappos.x < 0) ||
+        (trackpoint.mappos.x > gMap.width && gLastDrawnPoint.mappos.x > gMap.width) ||
+        (trackpoint.mappos.y < 0 && gLastDrawnPoint.mappos.y < 0) ||
+        (trackpoint.mappos.y > gMap.height && gLastDrawnPoint.mappos.y > gMap.height)) {
+      trackpoint.skip_drawing = true;
+    }
+  }
   if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
     gTrackContext.strokeStyle = gTrackColor;
     gTrackContext.fillStyle = gTrackContext.strokeStyle;
@@ -734,25 +744,41 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
     gTrackContext.lineJoin = "round";
   }
   // This breaks optimiziation, so make sure to reset optimization.
-  if (!gLastDrawnPoint || gLastDrawnPoint == trackpoint) {
+  if (trackpoint.skip_drawing || !gLastDrawnPoint) {
     trackpoint.optimized = false;
     // Close path if one was open.
     if (gLastDrawnPoint && gLastDrawnPoint.optimized) {
       gTrackContext.stroke();
     }
   }
-  if (!gLastDrawnPoint || (gLastDrawnPoint == trackpoint) || !gLastDrawnPoint.optimized) {
-    // Start drawing a segment.
-    gTrackContext.beginPath();
-    gTrackContext.arc(mappos.x, mappos.y,
-                      gTrackContext.lineWidth, 0, Math.PI * 2, false);
-    gTrackContext.fill();
-  }
-  else {
-    // Continue drawing segment, close if needed.
-    gTrackContext.lineTo(mappos.x, mappos.y);
-    if (!trackpoint.optimized)
-      gTrackContext.stroke();
+  if (!trackpoint.skip_drawing) {
+    if (gLastDrawnPoint && gLastDrawnPoint.skip_drawing && !gLastDrawnPoint.segmentEnd) {
+      // If the last point was skipped but the current one isn't, draw a segment start
+      // for the off-screen previous one as well as a connection line.
+      gTrackContext.beginPath();
+      gTrackContext.arc(gLastDrawnPoint.mappos.x, gLastDrawnPoint.mappos.y,
+                        gTrackContext.lineWidth, 0, Math.PI * 2, false);
+      gTrackContext.fill();
+      gTrackContext.lineTo(trackpoint.mappos.x, trackpoint.mappos.y);
+    }
+    else if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
+      // Start drawing a segment with the current point.
+      gTrackContext.beginPath();
+      gTrackContext.arc(trackpoint.mappos.x, trackpoint.mappos.y,
+                        gTrackContext.lineWidth, 0, Math.PI * 2, false);
+      gTrackContext.fill();
+    }
+    else if (gLastDrawnPoint &&
+             Math.abs(gLastDrawnPoint.mappos.x - trackpoint.mappos.x) <= 1 &&
+             Math.abs(gLastDrawnPoint.mappos.y - trackpoint.mappos.y) <= 1) {
+      // We would draw the same or almost the same point, don't do any actual drawing.
+    }
+    else {
+      // Continue drawing segment, close if needed.
+      gTrackContext.lineTo(trackpoint.mappos.x, trackpoint.mappos.y);
+      if (!trackpoint.optimized)
+        gTrackContext.stroke();
+    }
   }
   gLastDrawnPoint = trackpoint;
 }
