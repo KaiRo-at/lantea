@@ -410,6 +410,12 @@ h1 {
   color: #FFFFFF;
 }
 
+#loginerror {
+  color: red;
+  font-weight: bold;
+  padding: .5em;
+}
+
 /* dialog area - for loading error and welcome messages */
 #dialogArea {
   position: absolute;

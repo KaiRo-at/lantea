@@ -14,7 +14,7 @@ var gWaitCounter = 0;
 var gTrackUpdateInterval;
 var gAction, gActionLabel;
 var authData = null, userData = null;
-var gBackendURL = "https://backend.lantea.kairo.at";
+var gBackendURL = "https://backend.lantea.kairo.at/";
 var gAuthClientID = "lantea";
 
 window.onload = function() {
@@ -112,6 +112,9 @@ window.onresize = function() {
 }
 
 function startLogin() {
+  var logerr = document.getElementById("loginerror");
+  logerr.classList.add("hidden");
+  logerr.title = "";
   if (!authData || !authData["state"]) {
     // We have no oAuth state, try to fetch it and call ourselves again if it worked.
     prepareLoginButton(function() {
@@ -121,6 +124,8 @@ function startLogin() {
       else if (!userData) {
         // Only warn if we didn't actually end up being logged in.
         console.log("No OAuth state and fetching fails, client or server may be offline.");
+        logerr.classList.remove("hidden");
+        logerr.title = "Client or server may be offline.";
       }
     });
     return;
@@ -132,6 +137,8 @@ function startLogin() {
   }
   else {
     console.log("Opening Sign In window failed.");
+    logerr.classList.remove("hidden");
+    logerr.title = "Opening Sign-In window failed.";
   }
 }
 
