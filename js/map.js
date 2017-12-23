@@ -91,6 +91,7 @@ var gDragTouchID, gPinchStartWidth;
 var gGeoWatchID, gGPSWakeLock;
 var gTrack = [];
 var gLastTrackPoint, gLastDrawnPoint;
+var gDrawing = false;
 var gCenterPosition = true;
 
 var gCurPosMapCache;
@@ -706,6 +707,8 @@ function decodeIndex(encodedIdx) {
 }
 
 function drawTrack() {
+  if (gDrawing) { return; }
+  gDrawing = true;
   if (gTrackContext && (document.hidden != true)) { // Only draw if we're actually visible.
     gLastDrawnPoint = null;
     gCurPosMapCache = undefined;
@@ -717,18 +720,20 @@ function drawTrack() {
       }
     }
   }
+  gDrawing = false;
 }
 
-function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
-  var trackpoint = gps2xy(aLatitude, aLongitude);
+function drawTrackPoint(aLatitude, aLongitude, aLastPoint) {
+  var trackpoint = {"worldpos": gps2xy(aLatitude, aLongitude)};
+  var update_drawnpoint = true;
   // lastPoint is for optimizing (not actually executing the draw until the last)
-  trackpoint.segmentEnd = (lastPoint === true);
-  trackpoint.optimized = (lastPoint === false);
-  trackpoint.mappos = {x: Math.round((trackpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                       y: Math.round((trackpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+  trackpoint.segmentEnd = (aLastPoint === true);
+  trackpoint.optimized = (aLastPoint === false);
+  trackpoint.mappos = {x: Math.round((trackpoint.worldpos.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                       y: Math.round((trackpoint.worldpos.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+  trackpoint.skip_drawing = false;
   if (gLastDrawnPoint) {
     // Lines completely outside the current display should not be drawn.
-    trackpoint.skip_drawing = false;
     if ((trackpoint.mappos.x < 0 && gLastDrawnPoint.mappos.x < 0) ||
         (trackpoint.mappos.x > gMap.width && gLastDrawnPoint.mappos.x > gMap.width) ||
         (trackpoint.mappos.y < 0 && gLastDrawnPoint.mappos.y < 0) ||
@@ -768,10 +773,11 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
                         gTrackContext.lineWidth, 0, Math.PI * 2, false);
       gTrackContext.fill();
     }
-    else if (gLastDrawnPoint &&
-             Math.abs(gLastDrawnPoint.mappos.x - trackpoint.mappos.x) <= 1 &&
-             Math.abs(gLastDrawnPoint.mappos.y - trackpoint.mappos.y) <= 1) {
+    else if (!trackpoint.segmentEnd && gLastDrawnPoint &&
+             (Math.abs(gLastDrawnPoint.mappos.x - trackpoint.mappos.x) <= 1) &&
+             (Math.abs(gLastDrawnPoint.mappos.y - trackpoint.mappos.y) <= 1)) {
       // We would draw the same or almost the same point, don't do any actual drawing.
+      update_drawnpoint = false;
     }
     else {
       // Continue drawing segment, close if needed.
@@ -780,7 +786,9 @@ function drawTrackPoint(aLatitude, aLongitude, lastPoint) {
         gTrackContext.stroke();
     }
   }
-  gLastDrawnPoint = trackpoint;
+  if (update_drawnpoint) {
+    gLastDrawnPoint = trackpoint;
+  }
 }
 
 function drawCurrentLocation(trackPoint) {
