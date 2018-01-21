@@ -143,9 +143,18 @@ h1 {
   display: block;
 }
 
+/* non-standard touch screen detection for Mozilla browsers */
 .overlayArea:-moz-system-metric(touch-enabled),
 .menuDrawer:-moz-system-metric(touch-enabled) {
+  font-size: 3mm;
   font-size: 3mozmm;
+}
+/* Standard, Media Queries Level 4 touch screen detection */
+@media (pointer:coarse) {
+  .overlayArea,
+  .menuDrawer {
+    font-size: 16px;
+  }
 }
 
 .overlayArea input[type="button"],
