@@ -183,7 +183,7 @@ h1 {
 
 @media screen and (max-width: 330px) {
   .menuDrawer {
-    left: calc(-300px - 1ch); /* account for padding */
+    transform: translateX(calc(-300px - 1ch)); /* account for padding */
     width: 300px;
   }
 }

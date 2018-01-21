@@ -239,11 +239,15 @@ function initDB(aEvent) {
   request.onerror = function(event) {
     // Errors can be handled here. Error codes explain in:
     // https://developer.mozilla.org/en/IndexedDB/IDBDatabaseException#Constants
-    if (gDebug)
-      console.log("error opening mainDB: " + event.target.errorCode);
+    console.log("error opening mainDB: " + event.target.error);
+    showDBErrorDialog();
+    if (gDebug) {
+      console.log("error code: " + event.target.error.code +
+                  " - name: " + event.target.error.name);
+    }
   };
   request.onsuccess = function(event) {
-    mainDB = request.result;
+    mainDB = event.target.result;
     var throwEv = new CustomEvent("dbinit-done");
     gAction.dispatchEvent(throwEv);
   };
@@ -379,6 +383,16 @@ function showGLWarningDialog() {
     areas[i].style.display = "none";
   }
   document.getElementById("noGLwarning").style.display = "block";
+  dia.classList.remove("hidden");
+}
+
+function showDBErrorDialog() {
+  var dia = document.getElementById("dialogArea");
+  var areas = dia.children;
+  for (var i = 0; i <= areas.length - 1; i++) {
+    areas[i].style.display = "none";
+  }
+  document.getElementById("DBError").style.display = "block";
   dia.classList.remove("hidden");
 }
 
