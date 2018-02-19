@@ -534,3 +534,12 @@ h1 {
     right: 1px;
   }
 }
+
+#zoomInButton {
+    padding: 15px;
+    margin-top: 20px;
+}
+
+#zoomOutButton {
+    padding: 15px;
+}
