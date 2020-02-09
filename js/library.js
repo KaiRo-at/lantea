@@ -31,17 +31,39 @@ function showLibrary() {
           var litem = document.createElement("li");
           litem.textContent = dtformat(aResult[i]["time_created"]) + " - ";
           var llink = document.createElement("a");
-          llink.setAttribute("href", gBackendURL + "/track_gpx?id=" + aResult[i]["id"]);
+          var dlurl = gBackendURL + "/track_gpx?id=" + aResult[i]["id"];
+          llink.setAttribute("href", dlurl);
           llink.textContent = aResult[i]["comment"];
           litem.appendChild(llink);
           if (aResult[i]["devicename"]) {
             litem.appendChild(document.createTextNode(" (" + aResult[i]["devicename"] +  ")"));
+          }
+          if (userData && userData["permissions"].includes("admin")) {
+            // Show load entry for debugging purposes
+            litem.appendChild(document.createTextNode(" "));
+            var ldbtn = document.createElement("button");
+            ldbtn.onclick = loadButtonClicked;
+            ldbtn.textContent = "load";
+            ldbtn.classList.add("minorbutton");
+            ldbtn.dataset.id = aResult[i]["id"];
+            litem.appendChild(ldbtn);
+            litem.appendChild(document.createTextNode(" "));
+            var lderror = document.createElement("span");
+            lderror.classList.add("statusmsg");
+            litem.appendChild(lderror);
           }
           tlist.appendChild(litem);
         }
       }
     }
   );
+}
+
+function loadButtonClicked(aEvent) {
+  var feedbackspan = aEvent.target.nextElementSibling;
+  feedbackspan.textContent = "";
+  feedbackspan.classList.remove("error");
+  loadTrackFromBackend(aEvent.target.dataset.id, feedbackspan, hideLibrary);
 }
 
 function hideLibrary() {

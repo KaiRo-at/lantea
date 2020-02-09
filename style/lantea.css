@@ -419,6 +419,21 @@ h1 {
   color: #FFFFFF;
 }
 
+.overlayArea .minorbutton {
+  font-size: 75%;
+  border: none !important;
+  padding: 0 2px;
+}
+.overlayArea .minorbutton:not(:disabled):active {
+  padding: 0 1px 0 3px;
+}
+.overlayArea .statusmsg {
+  font-size: 75%;
+}
+.overlayArea .statusmsg.error {
+  color: #FF8080;
+}
+
 #loginerror {
   color: red;
   font-weight: bold;

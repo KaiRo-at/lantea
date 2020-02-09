@@ -1238,22 +1238,51 @@ function clearTrack() {
   drawTrack();
 }
 
-function loadTrack(aTrackId) {
+function loadTrackFromBackend(aTrackId, aFeedbackElement, aSuccessCallback) {
+  if (aFeedbackElement) {
+    aFeedbackElement.textContent = "Loading...";
+    // If someone loads without pointing to UI (e.g. for debugging), we just overwrite whatever's loaded.
+    if (calcTrackLength() > 1) {
+      aFeedbackElement.textContent = "Track >1km loaded, please save/clear.";
+      aFeedbackElement.classList.add("error");
+      return;
+    }
+  }
   fetchBackend("track_json?id=" + encodeURIComponent(aTrackId), "GET", null,
     function(aResult, aStatusCode) {
-      if (aStatusCode >= 400 || !aResult) {
+      if (aStatusCode >= 400) {
         console.log("loading track failed: " + aStatusCode + ", result: " + aResult.message);
-      }
-      else {
-        console.log("loading track with " + aResult.length + " points.");
-        gTrack = aResult;
-        for (var i = 0; i < gTrack.length; i++) {
-          try { gTrackStore.push(gTrack[i]); } catch(e) {}
+        if (aFeedbackElement) {
+          aFeedbackElement.textContent = "Error: " + aResult;
+          aFeedbackElement.classList.add("error");
         }
-        drawTrack();
+      }
+      else if (aResult) {
+        loadTrack(aResult);
+        if (aSuccessCallback) {
+          aSuccessCallback();
+        }
+      }
+      else { // If no result is returned, we assume a general error.
+        console.log("Error getting track with ID " + aTrackId + " from backend.");
+        if (aFeedbackElement) {
+          aFeedbackElement.textContent = "Error fetching track from backend.";
+          aFeedbackElement.classList.add("error");
+        }
       }
     }
   );
+}
+
+function loadTrack(aTrack) {
+  console.log("Loading track with " + aTrack.length + " points.");
+  gTrack = aTrack;
+  gTrackStore.clear(function(aSuccess, aEvent) {
+    for (var i = 0; i < gTrack.length; i++) {
+      try { gTrackStore.push(gTrack[i]); } catch(e) {}
+    }
+  });
+  drawTrack(); // Draws from gTrack, so not problem that gTrackStore is filled async.
 }
 
 var gTileService = {
