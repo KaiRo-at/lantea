@@ -18,6 +18,10 @@ var gBackendURL = "https://backend.lantea.kairo.at/";
 var gAuthClientID = "lantea";
 
 window.onload = function() {
+  // Assign click functions to buttons.
+  document.getElementById("zoomInButton").onclick = gMap.zoomIn;
+  document.getElementById("zoomOutButton").onclick = gMap.zoomOut;
+
   gAction = document.getElementById("action");
   gActionLabel = document.getElementById("actionlabel");
 
@@ -572,6 +576,13 @@ function reportUploadStatus(aSuccess, aResponse) {
   }
   else {
     document.getElementById("uploadFailed").style.display = "block";
+  }
+}
+
+function setMapStyle() {
+  var mapSel = document.getElementById("mapSelector");
+  if (mapSel.selectedIndex >= 0 && gMap.activeMap != mapSel.value) {
+    gMap.setActiveMap(mapSel.value);
   }
 }
 

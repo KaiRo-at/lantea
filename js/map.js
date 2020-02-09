@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var gGLMapCanvas, gTrackCanvas, gTrackContext, gGeolocation;
+var gGLMapCanvas, gTrackCanvas, gGeolocation;
 var gDebug = false;
 
 var gMinTrackAccuracy = 1000; // meters
@@ -90,11 +90,8 @@ var gDragTouchID, gPinchStartWidth;
 
 var gGeoWatchID, gGPSWakeLock;
 var gTrack = [];
-var gLastTrackPoint, gLastDrawnPoint;
-var gDrawing = false;
+var gLastTrackPoint;
 var gCenterPosition = true;
-
-var gCurPosMapCache;
 
 function initMap() {
   gGeolocation = navigator.geolocation;
@@ -121,7 +118,7 @@ function initMap() {
                                   gMap.handleContextRestored, false);
   }
   gTrackCanvas = document.getElementById("track");
-  gTrackContext = gTrackCanvas.getContext("2d");
+  gTrackLayer.context = gTrackCanvas.getContext("2d");
 
   //gDebug = true;
   if (gDebug) {
@@ -241,7 +238,7 @@ function loadPrefs(aEvent) {
         // (but clamped to the first value over a certain limit).
         // Initial paint will do initial track drawing.
         if (tracklen % redrawBase == 0) {
-          drawTrack();
+          gTrackLayer.drawTrack();
           if (redrawBase < 1000) {
             redrawBase = tracklen;
           }
@@ -249,7 +246,7 @@ function loadPrefs(aEvent) {
       }
       else {
         // Last point received.
-        drawTrack();
+        gTrackLayer.drawTrack();
       }
       if (!trackLoadStarted) {
         // We have the most recent point, if present, rest will load async.
@@ -287,6 +284,7 @@ var gMap = {
     ht: null,
     tsize: null,
   },
+  glDrawRequested: false, // To avoid parallel calls to drawGL().
 
   get width() { return gMap.gl ? gMap.gl.drawingBufferWidth : gGLMapCanvas.width; },
   get height() { return gMap.gl ? gMap.gl.drawingBufferHeight : gGLMapCanvas.height; },
@@ -395,7 +393,7 @@ var gMap = {
 
   draw: function() {
     gMap.assembleGL();
-    drawTrack();
+    gTrackLayer.drawTrack();
   },
 
   assembleGL: function() {
@@ -432,9 +430,7 @@ var gMap = {
               var imgObj = new Image();
               imgObj.onload = function() {
                 gMap.loadImageToTexture(imgObj, aTileKey);
-                if (document.hidden != true) { // Only draw if we're actually visible.
-                  window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
-                }
+                gMap.requestDrawGL();
                 URL.revokeObjectURL(imgURL);
               }
               imgObj.src = imgURL;
@@ -443,12 +439,19 @@ var gMap = {
         }
       }
     }
-    if (document.hidden != true) { // Only draw if we're actually visible.
-      window.requestAnimationFrame(function(aTimestamp) { gMap.drawGL() });
+    gMap.requestDrawGL();
+  },
+
+  requestDrawGL: function() {
+    // Only draw if we're actually visible.
+    // Also, avoid running this multiple times when it could not complete yet.
+    if (document.hidden != true && !gMap.glDrawRequested) {
+      gMap.glDrawRequested = true;
+      window.requestAnimationFrame(gMap.drawGL);
     }
   },
 
-  drawGL: function() {
+  drawGL: function(aTimestamp) {
     var xMin = gMap.pos.x - gMap.baseDim.wid / 2; // Corners of the window in level 18 pixels.
     var yMin = gMap.pos.y - gMap.baseDim.ht / 2;
     var xMax = gMap.pos.x + gMap.baseDim.wid / 2;
@@ -469,6 +472,7 @@ var gMap = {
         gMap.drawTileGL(xoff, yoff, tileKey);
       }
     }
+    gMap.glDrawRequested = false;
   },
 
   resizeAndDraw: function() {
@@ -587,6 +591,42 @@ var gMap = {
     }
   },
 
+  // Using scale(x, y) together with drawing old data on scaled canvas would be an improvement for zooming.
+  // See https://developer.mozilla.org/en-US/docs/Canvas_tutorial/Transformations#Scaling
+
+  zoomIn: function() {
+    if (gMap.pos.z < gMap.maxZoom) {
+      gMap.pos.z++;
+      gMap.draw();
+    }
+  },
+
+  zoomOut: function() {
+    if (gMap.pos.z > 0) {
+      gMap.pos.z--;
+      gMap.draw();
+    }
+  },
+
+  zoomTo: function(aTargetLevel) {
+    aTargetLevel = parseInt(aTargetLevel);
+    if (aTargetLevel >= 0 && aTargetLevel <= gMap.maxZoom) {
+      gMap.pos.z = aTargetLevel;
+      gMap.draw();
+    }
+  },
+
+  setActiveMap: function(aStyle) {
+    gMap.activeMap = aStyle;
+    gPrefs.set("active_map_style", gMap.activeMap);
+    document.getElementById("copyright").innerHTML =
+        gMapStyles[gMap.activeMap].copyright;
+    if (!gWaitCounter) { // Only do this when prefs are loaded already.
+      showUI();
+      gMap.draw();
+    }
+  },
+
   handleContextLost: function(event) {
     event.preventDefault();
     // GL context is gone, let's reset everything that depends on it.
@@ -601,28 +641,132 @@ var gMap = {
   },
 }
 
-// Using scale(x, y) together with drawing old data on scaled canvas would be an improvement for zooming.
-// See https://developer.mozilla.org/en-US/docs/Canvas_tutorial/Transformations#Scaling
+var gTrackLayer = {
+  context: null,
+  curPosMapCache: undefined,
+  lastDrawnPoint: null,
+  drawing: false,
 
-function zoomIn() {
-  if (gMap.pos.z < gMap.maxZoom) {
-    gMap.pos.z++;
-    gMap.draw();
-  }
-}
+  drawTrack: function() {
+    if (gTrackLayer.drawing) { return; }
+    gTrackLayer.drawing = true;
+    //performance.now()
+    if (gTrackLayer.context && (document.hidden != true)) { // Only draw if we're actually visible.
+      gTrackLayer.lastDrawnPoint = null;
+      gTrackLayer.curPosMapCache = undefined;
+      gTrackLayer.context.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
+      if (gTrack.length) {
+        for (var i = 0; i < gTrack.length; i++) {
+          gTrackLayer.drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
+                                     (i + 1 >= gTrack.length || gTrack[i+1].beginSegment));
+        }
+      }
+    }
+    gTrackLayer.drawing = false;
+  },
 
-function zoomOut() {
-  if (gMap.pos.z > 0) {
-    gMap.pos.z--;
-    gMap.draw();
-  }
-}
+  drawTrackPoint: function(aLatitude, aLongitude, aLastPoint) {
+    var trackpoint = {"worldpos": gps2xy(aLatitude, aLongitude)};
+    var update_drawnpoint = true;
+    // lastPoint is for optimizing (not actually executing the draw until the last)
+    trackpoint.segmentEnd = (aLastPoint === true);
+    trackpoint.optimized = (aLastPoint === false);
+    trackpoint.mappos = {x: Math.round((trackpoint.worldpos.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                         y: Math.round((trackpoint.worldpos.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+    trackpoint.skip_drawing = false;
+    if (gTrackLayer.lastDrawnPoint) {
+      // Lines completely outside the current display should not be drawn.
+      if ((trackpoint.mappos.x < 0 && gTrackLayer.lastDrawnPoint.mappos.x < 0) ||
+          (trackpoint.mappos.x > gMap.width && gTrackLayer.lastDrawnPoint.mappos.x > gMap.width) ||
+          (trackpoint.mappos.y < 0 && gTrackLayer.lastDrawnPoint.mappos.y < 0) ||
+          (trackpoint.mappos.y > gMap.height && gTrackLayer.lastDrawnPoint.mappos.y > gMap.height)) {
+        trackpoint.skip_drawing = true;
+      }
+    }
+    if (!gTrackLayer.lastDrawnPoint || !gTrackLayer.lastDrawnPoint.optimized) {
+      gTrackLayer.context.strokeStyle = gTrackColor;
+      gTrackLayer.context.fillStyle = gTrackLayer.context.strokeStyle;
+      gTrackLayer.context.lineWidth = gTrackWidth;
+      gTrackLayer.context.lineCap = "round";
+      gTrackLayer.context.lineJoin = "round";
+    }
+    // This breaks optimiziation, so make sure to reset optimization.
+    if (trackpoint.skip_drawing || !gTrackLayer.lastDrawnPoint) {
+      trackpoint.optimized = false;
+      // Close path if one was open.
+      if (gTrackLayer.lastDrawnPoint && gTrackLayer.lastDrawnPoint.optimized) {
+        gTrackLayer.context.stroke();
+      }
+    }
+    if (!trackpoint.skip_drawing) {
+      if (gTrackLayer.lastDrawnPoint && gTrackLayer.lastDrawnPoint.skip_drawing && !gTrackLayer.lastDrawnPoint.segmentEnd) {
+        // If the last point was skipped but the current one isn't, draw a segment start
+        // for the off-screen previous one as well as a connection line.
+        gTrackLayer.context.beginPath();
+        gTrackLayer.context.arc(gTrackLayer.lastDrawnPoint.mappos.x, gTrackLayer.lastDrawnPoint.mappos.y,
+                                gTrackLayer.context.lineWidth, 0, Math.PI * 2, false);
+        gTrackLayer.context.fill();
+        gTrackLayer.context.lineTo(trackpoint.mappos.x, trackpoint.mappos.y);
+      }
+      else if (!gTrackLayer.lastDrawnPoint || !gTrackLayer.lastDrawnPoint.optimized) {
+        // Start drawing a segment with the current point.
+        gTrackLayer.context.beginPath();
+        gTrackLayer.context.arc(trackpoint.mappos.x, trackpoint.mappos.y,
+                                gTrackLayer.context.lineWidth, 0, Math.PI * 2, false);
+        gTrackLayer.context.fill();
+      }
+      else if (!trackpoint.segmentEnd && gTrackLayer.lastDrawnPoint &&
+              (Math.abs(gTrackLayer.lastDrawnPoint.mappos.x - trackpoint.mappos.x) <= 1) &&
+              (Math.abs(gTrackLayer.lastDrawnPoint.mappos.y - trackpoint.mappos.y) <= 1)) {
+        // We would draw the same or almost the same point, don't do any actual drawing.
+        update_drawnpoint = false;
+      }
+      else {
+        // Continue drawing segment, close if needed.
+        gTrackLayer.context.lineTo(trackpoint.mappos.x, trackpoint.mappos.y);
+        if (!trackpoint.optimized)
+          gTrackLayer.context.stroke();
+      }
+    }
+    if (update_drawnpoint) {
+      gTrackLayer.lastDrawnPoint = trackpoint;
+    }
+  },
 
-function zoomTo(aTargetLevel) {
-  aTargetLevel = parseInt(aTargetLevel);
-  if (aTargetLevel >= 0 && aTargetLevel <= gMap.maxZoom) {
-    gMap.pos.z = aTargetLevel;
-    gMap.draw();
+  drawCurrentLocation: function(trackPoint) {
+    var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
+    var circleRadius = Math.round(gCurLocSize / 2);
+    var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                  y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+
+    gTrackLayer.undrawCurrentLocation();
+
+    // Cache overdrawn area.
+    gTrackLayer.curPosMapCache =
+        {point: locpoint,
+        radius: circleRadius,
+        data: gTrackLayer.context.getImageData(mappos.x - circleRadius,
+                                               mappos.y - circleRadius,
+                                               circleRadius * 2, circleRadius * 2)};
+
+    gTrackLayer.context.strokeStyle = gCurLocColor;
+    gTrackLayer.context.fillStyle = gTrackLayer.context.strokeStyle;
+    gTrackLayer.context.beginPath();
+    gTrackLayer.context.arc(mappos.x, mappos.y,
+                            circleRadius, 0, Math.PI * 2, false);
+    gTrackLayer.context.fill();
+  },
+
+  undrawCurrentLocation: function() {
+    if (gTrackLayer.curPosMapCache) {
+      var oldpoint = gTrackLayer.curPosMapCache.point;
+      var oldmp = {x: Math.round((oldpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                   y: Math.round((oldpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+      gTrackLayer.context.putImageData(gTrackLayer.curPosMapCache.data,
+                                       oldmp.x - gTrackLayer.curPosMapCache.radius,
+                                       oldmp.y - gTrackLayer.curPosMapCache.radius);
+      gTrackLayer.curPosMapCache = undefined;
+    }
   }
 }
 
@@ -642,20 +786,6 @@ function xy2gps(aX, aY) {
   return {latitude: 180 / Math.PI *
                     Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))),
           longitude: aX / maxZoomFactor * 360 - 180};
-}
-
-function setMapStyle() {
-  var mapSel = document.getElementById("mapSelector");
-  if (mapSel.selectedIndex >= 0 && gMap.activeMap != mapSel.value) {
-    gMap.activeMap = mapSel.value;
-    gPrefs.set("active_map_style", gMap.activeMap);
-    document.getElementById("copyright").innerHTML =
-        gMapStyles[gMap.activeMap].copyright;
-    if (!gWaitCounter) { // Only do this when prefs are loaded already.
-      showUI();
-      gMap.draw();
-    }
-  }
 }
 
 // A sane mod function that works for negative numbers.
@@ -704,127 +834,6 @@ function encodeIndex(x, y, z) {
 function decodeIndex(encodedIdx) {
   var ind = encodedIdx.split(",", 3);
   return {x: ind[0], y: ind[1], z: ind[2]};
-}
-
-function drawTrack() {
-  if (gDrawing) { return; }
-  gDrawing = true;
-  if (gTrackContext && (document.hidden != true)) { // Only draw if we're actually visible.
-    gLastDrawnPoint = null;
-    gCurPosMapCache = undefined;
-    gTrackContext.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
-    if (gTrack.length) {
-      for (var i = 0; i < gTrack.length; i++) {
-        drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
-                      (i + 1 >= gTrack.length || gTrack[i+1].beginSegment));
-      }
-    }
-  }
-  gDrawing = false;
-}
-
-function drawTrackPoint(aLatitude, aLongitude, aLastPoint) {
-  var trackpoint = {"worldpos": gps2xy(aLatitude, aLongitude)};
-  var update_drawnpoint = true;
-  // lastPoint is for optimizing (not actually executing the draw until the last)
-  trackpoint.segmentEnd = (aLastPoint === true);
-  trackpoint.optimized = (aLastPoint === false);
-  trackpoint.mappos = {x: Math.round((trackpoint.worldpos.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                       y: Math.round((trackpoint.worldpos.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
-  trackpoint.skip_drawing = false;
-  if (gLastDrawnPoint) {
-    // Lines completely outside the current display should not be drawn.
-    if ((trackpoint.mappos.x < 0 && gLastDrawnPoint.mappos.x < 0) ||
-        (trackpoint.mappos.x > gMap.width && gLastDrawnPoint.mappos.x > gMap.width) ||
-        (trackpoint.mappos.y < 0 && gLastDrawnPoint.mappos.y < 0) ||
-        (trackpoint.mappos.y > gMap.height && gLastDrawnPoint.mappos.y > gMap.height)) {
-      trackpoint.skip_drawing = true;
-    }
-  }
-  if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
-    gTrackContext.strokeStyle = gTrackColor;
-    gTrackContext.fillStyle = gTrackContext.strokeStyle;
-    gTrackContext.lineWidth = gTrackWidth;
-    gTrackContext.lineCap = "round";
-    gTrackContext.lineJoin = "round";
-  }
-  // This breaks optimiziation, so make sure to reset optimization.
-  if (trackpoint.skip_drawing || !gLastDrawnPoint) {
-    trackpoint.optimized = false;
-    // Close path if one was open.
-    if (gLastDrawnPoint && gLastDrawnPoint.optimized) {
-      gTrackContext.stroke();
-    }
-  }
-  if (!trackpoint.skip_drawing) {
-    if (gLastDrawnPoint && gLastDrawnPoint.skip_drawing && !gLastDrawnPoint.segmentEnd) {
-      // If the last point was skipped but the current one isn't, draw a segment start
-      // for the off-screen previous one as well as a connection line.
-      gTrackContext.beginPath();
-      gTrackContext.arc(gLastDrawnPoint.mappos.x, gLastDrawnPoint.mappos.y,
-                        gTrackContext.lineWidth, 0, Math.PI * 2, false);
-      gTrackContext.fill();
-      gTrackContext.lineTo(trackpoint.mappos.x, trackpoint.mappos.y);
-    }
-    else if (!gLastDrawnPoint || !gLastDrawnPoint.optimized) {
-      // Start drawing a segment with the current point.
-      gTrackContext.beginPath();
-      gTrackContext.arc(trackpoint.mappos.x, trackpoint.mappos.y,
-                        gTrackContext.lineWidth, 0, Math.PI * 2, false);
-      gTrackContext.fill();
-    }
-    else if (!trackpoint.segmentEnd && gLastDrawnPoint &&
-             (Math.abs(gLastDrawnPoint.mappos.x - trackpoint.mappos.x) <= 1) &&
-             (Math.abs(gLastDrawnPoint.mappos.y - trackpoint.mappos.y) <= 1)) {
-      // We would draw the same or almost the same point, don't do any actual drawing.
-      update_drawnpoint = false;
-    }
-    else {
-      // Continue drawing segment, close if needed.
-      gTrackContext.lineTo(trackpoint.mappos.x, trackpoint.mappos.y);
-      if (!trackpoint.optimized)
-        gTrackContext.stroke();
-    }
-  }
-  if (update_drawnpoint) {
-    gLastDrawnPoint = trackpoint;
-  }
-}
-
-function drawCurrentLocation(trackPoint) {
-  var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
-  var circleRadius = Math.round(gCurLocSize / 2);
-  var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
-
-  undrawCurrentLocation();
-
-  // Cache overdrawn area.
-  gCurPosMapCache =
-      {point: locpoint,
-       radius: circleRadius,
-       data: gTrackContext.getImageData(mappos.x - circleRadius,
-                                        mappos.y - circleRadius,
-                                        circleRadius * 2, circleRadius * 2)};
-
-  gTrackContext.strokeStyle = gCurLocColor;
-  gTrackContext.fillStyle = gTrackContext.strokeStyle;
-  gTrackContext.beginPath();
-  gTrackContext.arc(mappos.x, mappos.y,
-                    circleRadius, 0, Math.PI * 2, false);
-  gTrackContext.fill();
-}
-
-function undrawCurrentLocation() {
-  if (gCurPosMapCache) {
-    var oldpoint = gCurPosMapCache.point;
-    var oldmp = {x: Math.round((oldpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                 y: Math.round((oldpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
-    gTrackContext.putImageData(gCurPosMapCache.data,
-                               oldmp.x - gCurPosMapCache.radius,
-                               oldmp.y - gCurPosMapCache.radius);
-    gCurPosMapCache = undefined;
-  }
 }
 
 function calcTrackDuration() {
@@ -959,9 +968,9 @@ var mapEvHandler = {
               gMap.pos.y -= (y - gMap.height / 2) * (newZoomFactor - gMap.zoomFactor);
 
               if (gPinchStartWidth < curPinchStartWidth)
-                zoomIn();
+                gMap.zoomIn();
               else
-                zoomOut();
+                gMap.zoomOut();
 
               // Reset pinch start width and start another pinch gesture.
               gPinchStartWidth = null;
@@ -1027,9 +1036,9 @@ var mapEvHandler = {
           gMap.pos.y -= (y - gMap.height / 2) * (newZoomFactor - gMap.zoomFactor);
 
           if (aEvent.deltaY < 0)
-            zoomIn();
+            gMap.zoomIn();
           else
-            zoomOut();
+            gMap.zoomOut();
         }
         break;
       case "keydown":
@@ -1054,12 +1063,12 @@ var mapEvHandler = {
           case 87: // w
           case 107: // + (numpad)
           case 171: // + (normal key)
-            zoomIn();
+            gMap.zoomIn();
           break;
           case 83: // s
           case 109: // - (numpad)
           case 173: // - (normal key)
-            zoomOut();
+            gMap.zoomOut();
           break;
           case 48: // 0
           case 49: // 1
@@ -1070,10 +1079,10 @@ var mapEvHandler = {
           case 54: // 6
           case 55: // 7
           case 56: // 8
-            zoomTo(aEvent.which - 38);
+            gMap.zoomTo(aEvent.which - 38);
           break;
           case 57: // 9
-            zoomTo(9);
+            gMap.zoomTo(9);
           break;
           case 96: // 0 (numpad)
           case 97: // 1 (numpad)
@@ -1084,10 +1093,10 @@ var mapEvHandler = {
           case 102: // 6 (numpad)
           case 103: // 7 (numpad)
           case 104: // 8 (numpad)
-            zoomTo(aEvent.which - 86);
+            gMap.zoomTo(aEvent.which - 86);
           break;
           case 105: // 9 (numpad)
-            zoomTo(9);
+            gMap.zoomTo(9);
           break;
           default: // not supported
             console.log("key not supported: " + aEvent.which);
@@ -1202,10 +1211,10 @@ function startTracking() {
             }
           }
           if (!redrawn)
-            undrawCurrentLocation();
-            drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
+            gTrackLayer.undrawCurrentLocation();
+            gTrackLayer.drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
         }
-        drawCurrentLocation(tPoint);
+        gTrackLayer.drawCurrentLocation(tPoint);
       },
       function(error) {
         // Ignore erros for the moment, but this is good for debugging.
@@ -1235,7 +1244,7 @@ function endTracking() {
 function clearTrack() {
   gTrack = [];
   gTrackStore.clear();
-  drawTrack();
+  gTrackLayer.drawTrack();
 }
 
 function loadTrackFromBackend(aTrackId, aFeedbackElement, aSuccessCallback) {
@@ -1282,7 +1291,7 @@ function loadTrack(aTrack) {
       try { gTrackStore.push(gTrack[i]); } catch(e) {}
     }
   });
-  drawTrack(); // Draws from gTrack, so not problem that gTrackStore is filled async.
+  gTrackLayer.drawTrack(); // Draws from gTrack, so not problem that gTrackStore is filled async.
 }
 
 var gTileService = {
