@@ -6,10 +6,7 @@ var gGLMapCanvas, gTrackCanvas, gGeolocation;
 var gDebug = false;
 
 var gMinTrackAccuracy = 1000; // meters
-var gTrackWidth = 2; // pixels
-var gTrackColor = "#FF0000";
-var gCurLocSize = 6; // pixels
-var gCurLocColor = "#A00000";
+var gCenterDelayAfterMove = 3000; // milliseconds
 
 var gMapStyles = {
   // OSM tile usage policy: http://wiki.openstreetmap.org/wiki/Tile_usage_policy
@@ -92,6 +89,7 @@ var gGeoWatchID, gGPSWakeLock;
 var gTrack = [];
 var gLastTrackPoint;
 var gCenterPosition = true;
+var gLastMoveAction = null;
 
 function initMap() {
   gGeolocation = navigator.geolocation;
@@ -648,7 +646,12 @@ var gTrackLayer = {
   lastRequestedIndex: null, // may not have been actually drawn...
   drawRequested: false,
   restartDrawing: true,
+
   maxDrawTime: 10, // max time allowed for drawing a section, in ms - 10 means we can do 100 fps smoothly
+  trackWidth: 2, // pixels
+  trackColor: "#FF0000",
+  curLocSize: 6, // pixels
+  curLocColor: "#A00000",
 
   drawTrack: function(needRestart = true) {
     // TODO: figure out if we can support reverse drawing while initially loading the track.
@@ -716,9 +719,9 @@ var gTrackLayer = {
       }
     }
     if (!gTrackLayer.lastDrawnPoint || !gTrackLayer.lastDrawnPoint.optimized) {
-      gTrackLayer.context.strokeStyle = gTrackColor;
+      gTrackLayer.context.strokeStyle = gTrackLayer.trackColor;
       gTrackLayer.context.fillStyle = gTrackLayer.context.strokeStyle;
-      gTrackLayer.context.lineWidth = gTrackWidth;
+      gTrackLayer.context.lineWidth = gTrackLayer.trackWidth;
       gTrackLayer.context.lineCap = "round";
       gTrackLayer.context.lineJoin = "round";
     }
@@ -769,7 +772,7 @@ var gTrackLayer = {
     // Only run this when visible and we are not drawing a track right now.
     if (gTrackLayer.context && document.hidden != true && !gTrackLayer.drawRequested) {
       var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
-      var circleRadius = Math.round(gCurLocSize / 2);
+      var circleRadius = Math.round(gTrackLayer.curLocSize / 2);
       var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
                     y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
 
@@ -783,7 +786,7 @@ var gTrackLayer = {
                                                 mappos.y - circleRadius,
                                                 circleRadius * 2, circleRadius * 2)};
 
-      gTrackLayer.context.strokeStyle = gCurLocColor;
+      gTrackLayer.context.strokeStyle = gTrackLayer.curLocColor;
       gTrackLayer.context.fillStyle = gTrackLayer.context.strokeStyle;
       gTrackLayer.context.beginPath();
       gTrackLayer.context.arc(mappos.x, mappos.y,
@@ -973,6 +976,7 @@ var mapEvHandler = {
         gLastMouseX = x;
         gLastMouseY = y;
         showUI();
+        gLastMoveAction = performance.now();
         break;
       case "mousemove":
       case "touchmove":
@@ -1029,6 +1033,7 @@ var mapEvHandler = {
         }
         gLastMouseX = x;
         gLastMouseY = y;
+        gLastMoveAction = performance.now();
         break;
       case "mouseup":
       case "touchend":
@@ -1146,6 +1151,7 @@ var mapEvHandler = {
           gMap.pos.x -= dX * gMap.zoomFactor;
           gMap.pos.y -= dY * gMap.zoomFactor;
           gMap.draw();
+          gLastMoveAction = performance.now();
         }
         break;
     }
@@ -1237,7 +1243,7 @@ function startTracking() {
           gTrack.push(tPoint);
           try { gTrackStore.push(tPoint); } catch(e) {}
           var redrawn = false;
-          if (gCenterPosition) {
+          if (gCenterPosition && (!gLastMoveAction || performance.now() > gLastMoveAction + gCenterDelayAfterMove)) {
             var posCoord = gps2xy(position.coords.latitude,
                                   position.coords.longitude);
             if (Math.abs(gMap.pos.x - posCoord.x) > gMap.width * gMap.zoomFactor / 4 ||
