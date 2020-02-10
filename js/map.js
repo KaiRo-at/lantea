@@ -238,7 +238,7 @@ function loadPrefs(aEvent) {
         // (but clamped to the first value over a certain limit).
         // Initial paint will do initial track drawing.
         if (tracklen % redrawBase == 0) {
-          gTrackLayer.drawTrack();
+          gTrackLayer.drawTrack(); // TODO: we could draw incremmentally if we would support reverse-direction drawing...
           if (redrawBase < 1000) {
             redrawBase = tracklen;
           }
@@ -246,7 +246,7 @@ function loadPrefs(aEvent) {
       }
       else {
         // Last point received.
-        gTrackLayer.drawTrack();
+        gTrackLayer.drawTrack(); // TODO: we could draw incremmentally if we would support reverse-direction drawing...
       }
       if (!trackLoadStarted) {
         // We have the most recent point, if present, rest will load async.
@@ -645,32 +645,55 @@ var gTrackLayer = {
   context: null,
   curPosMapCache: undefined,
   lastDrawnPoint: null,
-  drawing: false,
+  lastRequestedIndex: null, // may not have been actually drawn...
+  drawRequested: false,
+  restartDrawing: true,
+  maxDrawTime: 10, // max time allowed for drawing a section, in ms - 10 means we can do 100 fps smoothly
 
-  drawTrack: function() {
-    if (gTrackLayer.drawing) { return; }
-    gTrackLayer.drawing = true;
-    //performance.now()
-    if (gTrackLayer.context && (document.hidden != true)) { // Only draw if we're actually visible.
+  drawTrack: function(needRestart = true) {
+    // TODO: figure out if we can support reverse drawing while initially loading the track.
+    // Only draw if we're actually visible.
+    // Also, avoid running this multiple times when it could not complete yet.
+    if (needRestart) { gTrackLayer.restartDrawing = true; }
+    if (gTrackLayer.context && document.hidden != true && !gTrackLayer.drawRequested) {
+      gTrackLayer.drawRequested = true;
+      window.requestAnimationFrame(gTrackLayer.drawTrackSection);
+    }
+  },
+
+  drawTrackSection: function(aTimestamp) {
+    var start = performance.now();
+    if (gTrackLayer.restartDrawing) {
+      gTrackLayer.lastRequestedIndex = 0;
       gTrackLayer.lastDrawnPoint = null;
+      gTrackLayer.restartDrawing = false;
       gTrackLayer.curPosMapCache = undefined;
       gTrackLayer.context.clearRect(0, 0, gTrackCanvas.width, gTrackCanvas.height);
-      if (gTrack.length) {
-        for (var i = 0; i < gTrack.length; i++) {
-          gTrackLayer.drawTrackPoint(gTrack[i].coords.latitude, gTrack[i].coords.longitude,
-                                     (i + 1 >= gTrack.length || gTrack[i+1].beginSegment));
+    }
+    if (gTrack.length && (performance.now() < start + gTrackLayer.maxDrawTime)) {
+      for (; gTrackLayer.lastRequestedIndex < gTrack.length; gTrackLayer.lastRequestedIndex++) {
+        gTrackLayer.drawTrackPoint(gTrackLayer.lastRequestedIndex);
+        if (performance.now() >= start + gTrackLayer.maxDrawTime) {
+          // Break out of the loop if we are over the max allowed time, we'll continue in the next rAF (see below).
+          break;
         }
       }
     }
-    gTrackLayer.drawing = false;
+    // If we still have work to do and we're still visible, continue drawing.
+    if ((gTrackLayer.lastRequestedIndex + 1 < gTrack.length) && gTrackLayer.context && (document.hidden != true)) {
+      window.requestAnimationFrame(gTrackLayer.drawTrackSection);
+    }
+    gTrackLayer.drawRequested = false;
   },
 
-  drawTrackPoint: function(aLatitude, aLongitude, aLastPoint) {
-    var trackpoint = {"worldpos": gps2xy(aLatitude, aLongitude)};
+  drawTrackPoint: function(aIndex) {
+    gTrackLayer.running = true;
+    var trackpoint = {"worldpos": gps2xy(gTrack[aIndex].coords.latitude, gTrack[aIndex].coords.longitude)};
+    var isLastPoint = (aIndex + 1 >= gTrack.length || gTrack[aIndex+1].beginSegment);
     var update_drawnpoint = true;
     // lastPoint is for optimizing (not actually executing the draw until the last)
-    trackpoint.segmentEnd = (aLastPoint === true);
-    trackpoint.optimized = (aLastPoint === false);
+    trackpoint.segmentEnd = (isLastPoint === true);
+    trackpoint.optimized = (isLastPoint === false);
     trackpoint.mappos = {x: Math.round((trackpoint.worldpos.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
                          y: Math.round((trackpoint.worldpos.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
     trackpoint.skip_drawing = false;
@@ -734,38 +757,44 @@ var gTrackLayer = {
   },
 
   drawCurrentLocation: function(trackPoint) {
-    var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
-    var circleRadius = Math.round(gCurLocSize / 2);
-    var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                  y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+    // Only run this when visible and we are not drawing a track right now.
+    if (gTrackLayer.context && document.hidden != true && !gTrackLayer.drawRequested) {
+      var locpoint = gps2xy(trackPoint.coords.latitude, trackPoint.coords.longitude);
+      var circleRadius = Math.round(gCurLocSize / 2);
+      var mappos = {x: Math.round((locpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                    y: Math.round((locpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
 
-    gTrackLayer.undrawCurrentLocation();
+      gTrackLayer.undrawCurrentLocation();
 
-    // Cache overdrawn area.
-    gTrackLayer.curPosMapCache =
-        {point: locpoint,
-        radius: circleRadius,
-        data: gTrackLayer.context.getImageData(mappos.x - circleRadius,
-                                               mappos.y - circleRadius,
-                                               circleRadius * 2, circleRadius * 2)};
+      // Cache overdrawn area.
+      gTrackLayer.curPosMapCache =
+          {point: locpoint,
+          radius: circleRadius,
+          data: gTrackLayer.context.getImageData(mappos.x - circleRadius,
+                                                mappos.y - circleRadius,
+                                                circleRadius * 2, circleRadius * 2)};
 
-    gTrackLayer.context.strokeStyle = gCurLocColor;
-    gTrackLayer.context.fillStyle = gTrackLayer.context.strokeStyle;
-    gTrackLayer.context.beginPath();
-    gTrackLayer.context.arc(mappos.x, mappos.y,
-                            circleRadius, 0, Math.PI * 2, false);
-    gTrackLayer.context.fill();
+      gTrackLayer.context.strokeStyle = gCurLocColor;
+      gTrackLayer.context.fillStyle = gTrackLayer.context.strokeStyle;
+      gTrackLayer.context.beginPath();
+      gTrackLayer.context.arc(mappos.x, mappos.y,
+                              circleRadius, 0, Math.PI * 2, false);
+      gTrackLayer.context.fill();
+    }
   },
 
   undrawCurrentLocation: function() {
-    if (gTrackLayer.curPosMapCache) {
-      var oldpoint = gTrackLayer.curPosMapCache.point;
-      var oldmp = {x: Math.round((oldpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
-                   y: Math.round((oldpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
-      gTrackLayer.context.putImageData(gTrackLayer.curPosMapCache.data,
-                                       oldmp.x - gTrackLayer.curPosMapCache.radius,
-                                       oldmp.y - gTrackLayer.curPosMapCache.radius);
-      gTrackLayer.curPosMapCache = undefined;
+    // Only run this when visible and we are not drawing a track right now.
+    if (gTrackLayer.context && document.hidden != true && !gTrackLayer.drawRequested) {
+      if (gTrackLayer.curPosMapCache) {
+        var oldpoint = gTrackLayer.curPosMapCache.point;
+        var oldmp = {x: Math.round((oldpoint.x - gMap.pos.x) / gMap.zoomFactor + gMap.width / 2),
+                    y: Math.round((oldpoint.y - gMap.pos.y) / gMap.zoomFactor + gMap.height / 2)};
+        gTrackLayer.context.putImageData(gTrackLayer.curPosMapCache.data,
+                                        oldmp.x - gTrackLayer.curPosMapCache.radius,
+                                        oldmp.y - gTrackLayer.curPosMapCache.radius);
+        gTrackLayer.curPosMapCache = undefined;
+      }
     }
   }
 }
@@ -1212,7 +1241,7 @@ function startTracking() {
           }
           if (!redrawn)
             gTrackLayer.undrawCurrentLocation();
-            gTrackLayer.drawTrackPoint(position.coords.latitude, position.coords.longitude, true);
+            gTrackLayer.drawTrackPoint(gTrack.length-1);
         }
         gTrackLayer.drawCurrentLocation(tPoint);
       },
