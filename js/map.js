@@ -675,6 +675,7 @@ var gTrackLayer = {
         gTrackLayer.drawTrackPoint(gTrackLayer.lastRequestedIndex);
         if (performance.now() >= start + gTrackLayer.maxDrawTime) {
           // Break out of the loop if we are over the max allowed time, we'll continue in the next rAF (see below).
+          gTrackLayer.drawTrackPoint(null);
           break;
         }
       }
@@ -688,6 +689,14 @@ var gTrackLayer = {
 
   drawTrackPoint: function(aIndex) {
     gTrackLayer.running = true;
+    if (!aIndex && aIndex !== 0) {
+      // We can be called this way to make sure we draw an actual line up to where we are right now.
+      if (gTrackLayer.lastDrawnPoint && gTrackLayer.lastDrawnPoint.optimized) {
+        gTrackLayer.context.stroke();
+        gTrackLayer.lastDrawnPoint.optimized = false;
+      }
+      return;
+    }
     var trackpoint = {"worldpos": gps2xy(gTrack[aIndex].coords.latitude, gTrack[aIndex].coords.longitude)};
     var isLastPoint = (aIndex + 1 >= gTrack.length || gTrack[aIndex+1].beginSegment);
     var update_drawnpoint = true;
