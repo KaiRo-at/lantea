@@ -49,6 +49,11 @@ var gMapStyles = {
      url: "https://tilecache[1-4].kairo.at/osmhot/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
      //url: "http://[a-c].tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", // https has CAcert which doesn't work in browsers
      copyright: 'Map data and imagery &copy; <a href="http://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="http://www.openstreetmap.org/copyright">ODbL/CC-BY-SA</a>'},
+  opentopomap:
+    {name: "OpenTopoMap",
+     //url: "https://tilecache[1-4].kairo.at/opentopomap/{z}/{x}/{y}.png", // route through tilecache @ kairo.at
+     url: "https://[a-c].tile.opentopomap.org/{z}/{x}/{y}.png",
+     copyright: 'Map data: © <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | map style: © <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'},
   hikebike:
     {name: "Hike and Bike (OSM)",
      url: "https://tilecache[1-4].kairo.at/hikebike/{z}/{x}/{y}.png", // route through CORS+SSL tilecache @ kairo.at
